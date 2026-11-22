@@ -503,6 +503,57 @@ function healthPeriodDays(xml) {
  return [...dates].sort();
 }
 
+// Read the Apple export incrementally. Only menstrual records become tiny XML documents.
+// Never build a DOM for the complete Health export or send its data over the network.
+async function readHealthFile(file, {onProgress=()=>{}, isCurrent=()=>true, chunkSize=512*1024}={}) {
+ if (!file.size) throw new Error('Файл пустой. Выбери export.xml из архива «Здоровья».');
+ const decoder=new TextDecoder('utf-8');
+ const dates=new Set();
+ let buffer='', prefix='', rootSeen=false, endSeen=false;
+ const check=()=>{if(!isCurrent())throw new DOMException('Отменено','AbortError');};
+ for(let offset=0;offset<file.size;offset+=chunkSize){
+   check();
+   const bytes=await file.slice(offset,Math.min(offset+chunkSize,file.size)).arrayBuffer();
+   check();
+   buffer+=decoder.decode(bytes,{stream:offset+chunkSize<file.size});
+   if(prefix.length<65536)prefix+=buffer.slice(0,65536-prefix.length);
+   rootSeen ||= /<HealthData(?=[\s>])/.test(prefix);
+   endSeen ||= /<\/HealthData\s*>/.test(buffer);
+   let cursor=0;
+   while(true){
+     const start=buffer.indexOf('<Record',cursor);
+     if(start<0){buffer=buffer.slice(Math.max(cursor,buffer.length-64));break;}
+     const boundary=buffer[start+7];
+     if(boundary && !/[\s/>]/.test(boundary)){cursor=start+7;continue;}
+     let quote='', end=start+7;
+     for(;end<buffer.length;end++){
+       const char=buffer[end];
+       if(quote){if(char===quote)quote='';}
+       else if(char==='"'||char==="'")quote=char;
+       else if(char==='>')break;
+     }
+     if(end===buffer.length){
+       buffer=buffer.slice(start);
+       if(buffer.length>128*1024)throw new Error('Не удалось прочитать XML. Проверь, что выбран export.xml из «Здоровья».');
+       break;
+     }
+     const record=buffer.slice(start,end+1);
+     if(record.includes('HKCategoryTypeIdentifierMenstrualFlow')){
+       // Some exports use an explicit closing tag instead of a self-closing Record.
+       const isolated=record.endsWith('/>')?record:record+'</Record>';
+       for(const day of healthPeriodDays('<HealthData>'+isolated+'</HealthData>'))dates.add(day);
+     }
+     cursor=end+1;
+   }
+   onProgress(Math.min(100,Math.round(Math.min(offset+chunkSize,file.size)/file.size*100)));
+   // Yield so Safari/Telegram can paint progress and react to cancellation.
+   await new Promise(resolve=>setTimeout(resolve,0));
+ }
+ check();
+ if(!rootSeen || !endSeen)throw new Error('Нужен полный файл export.xml из архива «Здоровья». ZIP сначала распакуй в «Файлах».');
+ return [...dates].sort();
+}
+
 function floPeriodDays(json) {
  const data = JSON.parse(json.replace(/^\uFEFF/, ''));
  if (!data || typeof data !== 'object') throw new Error('Нужен JSON-файл с данными Flo.');
@@ -543,9 +594,21 @@ function floCalendarDay(value) {
 function setupPeriodImport(source, readDates, fileError) {
  const get = name => $(source + '-' + name);
  let pendingDates = [];
+ let readVersion=0;
+ const cancel=document.createElement('button');
+ cancel.type='button';cancel.className='field gap';cancel.textContent='Отменить чтение';cancel.hidden=true;
+ get('status').after(cancel);
+ cancel.addEventListener('click',()=>{
+   readVersion++;pendingDates=[];get('file').value='';cancel.hidden=true;
+   get('preview').hidden=get('apply').hidden=true;
+   get('status').textContent='Чтение отменено. Сохранённые отметки не изменились.';
+ });
  get('file').addEventListener('change', async event => {
   const input = event.currentTarget;
   const file = input.files[0];
+  const version=++readVersion;
+  const isCurrent=()=>version===readVersion && input.files[0]===file;
+  cancel.hidden=!file;
   pendingDates = [];
   get('apply').hidden = true;
   get('preview').hidden = true;
@@ -553,22 +616,30 @@ function setupPeriodImport(source, readDates, fileError) {
   get('status').textContent = file ? 'Читаем файл…' : '';
   if (!file) return;
   try {
-    const contents = await file.text();
-    if (input.files[0] !== file) return;
-    const dates = readDates(contents);
+    const dates = source==='health'
+      ? await readHealthFile(file,{isCurrent,onProgress:percent=>{
+          if(isCurrent())get('status').textContent='Читаем файл на устройстве: '+percent+'%. Можно отменить.';
+        }})
+      : readDates(await file.text());
+    if (!isCurrent()) return;
+    cancel.hidden=true;
     pendingDates = dates.filter(day => !marked.has(day));
     get('status').textContent = pendingDates.length
       ? 'Новых дат: ' + pendingDates.length + '. Проверь их перед добавлением.'
       : dates.length ? 'Все найденные даты уже есть в календаре.' : 'В файле нет записей о месячных.';
-    for (const day of pendingDates) {
+    for (const day of pendingDates.slice(0,120)) {
       const item = document.createElement('li');
       item.textContent = full(parse(day));
       get('dates').append(item);
     }
+    if(pendingDates.length>120){
+      const note=document.createElement('li');note.textContent='Показаны первые 120 дат. Будут добавлены все найденные даты: '+pendingDates.length+'.';get('dates').append(note);
+    }
     get('preview').hidden = get('apply').hidden = !pendingDates.length;
-  } catch {
-    if (input.files[0] === file) {
-      get('status').textContent = fileError;
+  } catch (error) {
+    if (isCurrent()) {
+      get('status').textContent = error.name==='AbortError' ? 'Чтение отменено.' : (source==='health' && error.message ? error.message : fileError);
+      cancel.hidden=true;
     }
   }
  });
@@ -685,4 +756,5 @@ document.querySelector('.calendar-card').append(markDetails);
 </script>
 </body>
 </html>
+
 
