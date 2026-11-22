@@ -113,10 +113,10 @@ body{background:#fff9f1}main{max-width:480px;padding:22px 20px calc(104px + env(
 </details>
 <details class="import-details"><summary>Импорт из «Здоровья»</summary><div class="card">
 <h2>Импорт из «Здоровья»</h2>
-<p class="small gap">На iPhone открой «Здоровье», нажми на фото профиля и выбери «Экспортировать все данные здоровья». Сохрани архив в «Файлы», распакуй его и выбери файл export.xml.</p>
+<p class="small gap">Для небольшого PDF: «Здоровье» → «Отслеживание цикла» → «История цикла» → «Экспорт PDF». Также можно выбрать export.xml из полного архива.</p>
 <p class="small gap">+9 прочитает даты месячных на этом устройстве.</p>
-<div class="gap"><label for="health-file">Файл Apple «Здоровье» (.xml)</label>
-<input class="field" id="health-file" type="file" accept=".xml,text/xml,application/xml" style="display:block;max-width:100%"></div>
+<div class="gap"><label for="health-file">Файл Apple «Здоровье» (.xml или .pdf)</label>
+<input class="field" id="health-file" type="file" accept=".xml,.pdf,text/xml,application/xml,application/pdf" style="display:block;max-width:100%"></div>
 <p class="small gap" id="health-status" role="status"></p>
 <details id="health-preview" hidden><summary>Посмотреть даты</summary><ul id="health-dates"></ul></details>
 <button class="field gap" id="health-apply" hidden>Добавить даты</button>
@@ -574,10 +574,12 @@ function setupPeriodImport(source,readDates,fileError){
   get('status').textContent='Запускаем фоновое чтение…';
   if(source==='health')try{localStorage.setItem('plus9-health-reading','1');}catch{}
   try{
-   const dates=source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
+   const isPdf=source==='health'&&(/\.pdf$/i.test(file.name)||file.type==='application/pdf');
+   const dates=isPdf?await (await import('./health-pdf.mjs?v=1')).readHealthPdf(file):source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
    if(!isCurrent())return;
    clearFlag();cancel.hidden=true;pendingDates=dates.filter(day=>!marked.has(day));
    get('status').textContent=pendingDates.length?'Новых дат: '+pendingDates.length+'. Проверь их перед добавлением.':dates.length?'Все найденные даты уже есть в календаре.':'В файле нет записей о месячных.';
+   if(isPdf)get('status').textContent+=' PDF: дни восстановлены подряд по началу и длительности из таблицы. Если были пропуски, поправь их в календаре.';
    for(const day of pendingDates.slice(0,120)){const item=document.createElement('li');item.textContent=full(parse(day));get('dates').append(item);}
    if(pendingDates.length>120){const note=document.createElement('li');note.textContent='Показаны первые 120 дат. Всего будет добавлено: '+pendingDates.length+'.';get('dates').append(note);}
    get('preview').hidden=get('apply').hidden=!pendingDates.length;
