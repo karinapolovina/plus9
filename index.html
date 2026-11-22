@@ -111,6 +111,16 @@ if (location.protocol === 'https:') {
 <div id="matches" class="matches gap"></div>
 <details><summary>Как оцениваются фертильные дни</summary><p>Первый день каждой группы подряд отмеченных дней считается началом месячных. По трём последним началам считаем среднюю длину двух циклов. Предполагаемый день овуляции — день цикла с номером «длина цикла минус 14». Фертильное окно включает этот день и пять предыдущих.</p><p>Овуляция может смещаться даже при регулярном цикле. Пересечение сравнивает календарные даты. При выборе дня шкала использует его как условную дату зачатия. Для контрацепции этот расчёт не подходит. <a href="https://www.asrm.org/practice-guidance/practice-committee-documents/optimizing-natural-fertility-a-committee-opinion-2021/" target="_blank" rel="noopener noreferrer">Метод и ограничения (ASRM)</a></p></details>
 </div>
+<div class="card">
+<h2>Импорт из «Здоровья»</h2>
+<p class="small gap">На iPhone открой «Здоровье», нажми на фото профиля и выбери «Экспортировать все данные здоровья». Сохрани архив в «Файлы», распакуй его и выбери файл export.xml.</p>
+<p class="small gap">+9 прочитает даты месячных на этом устройстве.</p>
+<div class="gap"><label for="health-file">Файл Apple «Здоровье» (.xml)</label>
+<input class="field" id="health-file" type="file" accept=".xml,text/xml,application/xml" style="display:block;max-width:100%"></div>
+<p class="small gap" id="health-status" role="status"></p>
+<details id="health-preview" hidden><summary>Посмотреть даты</summary><ul id="health-dates"></ul></details>
+<button class="field gap" id="health-apply" hidden>Добавить даты</button>
+</div>
 <p class="small" id="storage" role="status">Отметки хранятся в этом браузере или на этом устройстве в Telegram. </p>
 </section>
 </main>
@@ -363,6 +373,79 @@ $('jump').addEventListener('click',()=>{
  displayMonth=date(firstConception.getUTCFullYear(),firstConception.getUTCMonth()+1);
  renderCalendar();
 });
+function healthPeriodDays(xml) {
+ const document = new DOMParser().parseFromString(xml, 'application/xml');
+ if (document.documentElement.localName !== 'HealthData' || document.querySelector('parsererror')) {
+   throw new Error('Нужен файл export.xml из архива Apple «Здоровье».');
+ }
+ const dates = new Set();
+ const datePattern = /^(\d{4}-\d{2}-\d{2})[ T]/;
+ for (const record of document.querySelectorAll('HealthData > Record[type="HKCategoryTypeIdentifierMenstrualFlow"]')) {
+   if (!/^(?:HKCategoryValueMenstrualFlow(?:Unspecified|Light|Medium|Heavy)|[1-4])$/.test(record.getAttribute('value'))) continue;
+   const start = record.getAttribute('startDate')?.match(datePattern)?.[1];
+   const endValue = record.getAttribute('endDate');
+   const end = endValue?.match(datePattern)?.[1];
+   if (!start || !end) continue;
+   const first = parse(start);
+   const last = parse(end);
+   if (!Number.isFinite(+first) || !Number.isFinite(+last) || iso(first) !== start || iso(last) !== end || first > last) continue;
+   const endAtMidnight = /[ T]00:00:00(?:[.,]0+)?(?:\s|Z|[+-]|$)/.test(endValue);
+   const finalDay = endAtMidnight && last > first ? shift(last, -1) : last;
+   for (let day = first; day <= finalDay && day <= today; day = shift(day, 1)) dates.add(iso(day));
+ }
+ return [...dates].sort();
+}
+
+let pendingHealthDates = [];
+$('health-file').addEventListener('change', async event => {
+ const input = event.currentTarget;
+ const file = input.files[0];
+ pendingHealthDates = [];
+ $('health-apply').hidden = true;
+ $('health-preview').hidden = true;
+ $('health-dates').replaceChildren();
+ $('health-status').textContent = file ? 'Читаем файл…' : '';
+ if (!file) return;
+ try {
+   const xml = await file.text();
+   if (input.files[0] !== file) return;
+   const dates = healthPeriodDays(xml);
+   pendingHealthDates = dates.filter(day => !marked.has(day));
+   $('health-status').textContent = pendingHealthDates.length
+     ? 'Новых дат: ' + pendingHealthDates.length + '. Проверь их перед добавлением.'
+     : dates.length ? 'Все найденные даты уже есть в календаре.' : 'В файле нет записей о месячных.';
+   for (const day of pendingHealthDates) {
+     const item = document.createElement('li');
+     item.textContent = full(parse(day));
+     $('health-dates').append(item);
+   }
+   $('health-preview').hidden = $('health-apply').hidden = !pendingHealthDates.length;
+ } catch (error) {
+   if (input.files[0] === file) {
+     $('health-status').textContent = error.message === 'Нужен файл export.xml из архива Apple «Здоровье».'
+       ? error.message : 'Не удалось прочитать файл. Попробуй выбрать export.xml ещё раз.';
+   }
+ }
+});
+
+$('health-apply').addEventListener('click', () => {
+ const dates = pendingHealthDates.filter(day => !marked.has(day));
+ const combined = new Set([...marked, ...dates]);
+ try {
+   localStorage.setItem(storageKey, JSON.stringify([...combined]));
+ } catch {
+   $('health-status').textContent = 'Не удалось сохранить даты на этом устройстве.';
+   return;
+ }
+ marked = combined;
+ pendingHealthDates = [];
+ $('health-dates').replaceChildren();
+ $('health-preview').hidden = $('health-apply').hidden = true;
+ $('health-file').value = '';
+ $('health-status').textContent = 'Добавлено дат: ' + dates.length + '.';
+ renderCalendar();
+});
+
 let conceptionOffset = 0;
 function renderToday(){
  const conception = shift(today, conceptionOffset);
