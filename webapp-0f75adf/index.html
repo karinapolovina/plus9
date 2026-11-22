@@ -49,6 +49,10 @@ body{background:#fff9f1}main{max-width:480px;padding:22px 20px calc(104px + env(
 .day-row span{font-size:24px;color:#c33f30;width:28px;text-align:center}
 .day-editor .close-day{border:0;font-size:24px;width:44px}
 .day-editor .small{margin-top:12px}
+.grid .predicted-period{border:1px dashed #d96352!important;background:#fff0e9!important}
+.grid .predicted-ovulation{font-weight:850;text-decoration:underline;text-underline-offset:4px}
+.legend .predicted-period-label::before{background:#fff0e9;border:1px dashed #d96352}
+.legend .ovulation-label::before{background:#b7e6f9;border-bottom:3px solid #16627f}
 </style>
 </head>
 <body>
@@ -110,7 +114,7 @@ body{background:#fff9f1}main{max-width:480px;padding:22px 20px calc(104px + env(
 <div class="line gap calendar-month"><button class="arrow" id="prev" aria-label="Предыдущий месяц">‹</button><strong id="month" class="month" aria-live="polite"></strong><button class="arrow" id="next" aria-label="Следующий месяц">›</button></div>
 <div class="grid" id="days"></div>
 <p class="small gap day-instruction">Нажми на дату, чтобы добавить отметку</p>
-<p class="small legend"><b>Месячные</b><b class="sex-label">Секс</b><b class="window-label">Окно по знаку</b><b class="fertile-label">Фертильные дни</b><b class="overlap-label">Пересечение</b></p>
+<p class="small legend"><b>Месячные</b><b class="sex-label">Секс</b><b class="predicted-period-label">Прогноз месячных</b><b class="ovulation-label">Примерная овуляция</b><b class="window-label">Окно по знаку</b><b class="fertile-label">Фертильные дни</b><b class="overlap-label">Пересечение</b></p>
 <button class="field gap" id="jump">Показать окно по знаку</button>
 </div>
 <div class="card overlap-card"><p class="eyebrow" id="overlap-eyebrow">Твой прогноз</p>
@@ -362,7 +366,8 @@ function fertileEstimate(){
  const starts=[...marked].sort().map(parse).filter((day,index,days)=>
    day<=today && (index===0 || day-days[index-1]>dayMs)
  ).slice(-12);
- const latest=starts.at(-1) || (cycleSettings.lastPeriod ? parse(cycleSettings.lastPeriod) : null);
+ const anchors=[starts.at(-1),cycleSettings.lastPeriod?parse(cycleSettings.lastPeriod):null].filter(d=>d&&Number.isFinite(+d)&&d<=today);
+ const latest=anchors.length?new Date(Math.max(...anchors.map(Number))):null;
  if(!latest || !Number.isFinite(+latest)) return {message:'Укажи первый день последних месячных, чтобы начать прогноз.'};
  const observedLengths=starts.slice(1).map((day,index)=>(day-starts[index])/dayMs)
    .filter(length=>length>=15 && length<=60);
@@ -380,12 +385,19 @@ function fertileEstimate(){
    fertilePeriod=shift(fertilePeriod,length);
    ovulation=shift(fertilePeriod,-14);
  }
- const windows=[0,1].map(offset=>{
-   const day=shift(ovulation,offset*length);
-   return [shift(day,-5),shift(day,1)];
- });
- const horizon=shift(fertilePeriod,length*2-1);
- return {windows,length,horizon,latest,nextPeriod,ovulation,periodLength,observedCycles:observedLengths.length};
+ // Cover the selected sign and the month currently viewed, plus a full cycle.
+ const horizon=new Date(Math.max(+shift(today,length*2),+lastConception,+date(displayMonth.getUTCFullYear(),displayMonth.getUTCMonth()+2,0)));
+ const windows=[],ovulations=[],periods=[];
+ for(let day=ovulation;shift(day,-5)<=horizon;day=shift(day,length)){
+  windows.push([shift(day,-5),shift(day,1)]);
+  ovulations.push(iso(day));
+ }
+ for(let start=currentStart;start<=horizon;start=shift(start,length)){
+  if(start<=latest)continue;
+  periods.push([start,shift(start,Math.max(1,Math.min(15,periodLength))-1)]);
+ }
+ return {windows,ovulations,periods,length,horizon,latest,nextPeriod,ovulation,periodLength,observedCycles:observedLengths.length};
+
 }
 function renderMatches(estimate){
  const matches=$('matches');
@@ -461,7 +473,10 @@ function updateComparison(){
  const past=lastConception<today;
  $('comparison-title').textContent=unavailable?'Добавь данные цикла':past?'Этот период уже прошёл':beyond?'Пока рано сравнивать':found.length?'Есть совпадение':'Совпадений не найдено';
  $('comparison-message').textContent=unavailable?estimate.message:past?'Выбери другой год рождения для сравнения с предстоящими днями цикла.':beyond?'Сейчас расчёт цикла охватывает '+range(estimate.windows[0][0],estimate.windows.at(-1)[1])+'. Выбранный период позже. Отсутствие результата не означает, что даты не совпадут.':found.length?'Примерное пересечение: '+range(found[0],found.at(-1))+'. Это календарная оценка, а не подтверждение овуляции.':'В показанных примерных фертильных окнах пересечений с выбранным знаком нет. Оценка изменится с новыми данными цикла.';
- comparisonTarget=unavailable?null:found[0]||estimate.windows[0][0];
+ if(!unavailable&&!past){
+  $('comparison-message').textContent+=' Прогноз продолжен по средней длине цикла до выбранного периода. Чем дальше дата, тем менее точна оценка; новые отметки её изменят.';
+ }
+ comparisonTarget=unavailable?null:found[0]||new Date(Math.max(+today,+firstConception));
  $('comparison-next').textContent=unavailable?'Добавить данные цикла':past?'Выбрать другой год':'Показать в календаре';
 }
 function renderCalendar(){
@@ -483,6 +498,10 @@ function renderCalendar(){
    const inWindow=value>=firstConception && value<=lastConception;
    button.textContent=day;
    button.classList.toggle('period-day',marked.has(key));
+   const predictedPeriod=!marked.has(key)&&value>=today&&estimate.periods?.some(([first,last])=>value>=first&&value<=last);
+   const predictedOvulation=estimate.ovulations?.includes(key);
+   button.classList.toggle('predicted-period',Boolean(predictedPeriod));
+   button.classList.toggle('predicted-ovulation',Boolean(predictedOvulation));
    const fertile=estimate.windows?.some(([first,last])=>value>=today && value>=first && value<=last);
    button.classList.toggle('sex-day',sexDays.has(key));
    button.classList.toggle('window',inWindow);
@@ -492,7 +511,7 @@ function renderCalendar(){
    button.setAttribute('aria-label',full(value)+(sexDays.has(key)?', отмечен незащищённый секс':'')+(inWindow?', окно по знаку':'')+(fertile?', примерный фертильный день':''));
    if(key===iso(today)) button.setAttribute('aria-current','date');
    button.setAttribute('aria-haspopup','dialog');
-   button.setAttribute('aria-label',full(value)+(marked.has(key)?', месячные':'')+(sexDays.has(key)?', секс без защиты':'')+'. Открыть день');
+   button.setAttribute('aria-label',full(value)+(marked.has(key)?', месячные':'')+(predictedPeriod?', прогноз месячных':'')+(predictedOvulation?', примерная овуляция':'')+(sexDays.has(key)?', секс без защиты':'')+'. Открыть день');
    button.addEventListener('click',()=>openCalendarDay(key));
    grid.append(button);
  }
