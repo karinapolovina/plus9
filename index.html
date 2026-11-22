@@ -336,7 +336,7 @@ function fertileEstimate(){
    day<=today && (index===0 || day-days[index-1]>dayMs)
  ).slice(-12);
  const latest=starts.at(-1) || (cycleSettings.lastPeriod ? parse(cycleSettings.lastPeriod) : null);
- if(!latest) return {message:'Укажи первый день последних месячных, чтобы начать прогноз.'};
+ if(!latest || !Number.isFinite(+latest)) return {message:'Укажи первый день последних месячных, чтобы начать прогноз.'};
  const observedLengths=starts.slice(1).map((day,index)=>(day-starts[index])/dayMs)
    .filter(length=>length>=15 && length<=60);
  const length=observedLengths.length
@@ -344,10 +344,20 @@ function fertileEstimate(){
    : Number(cycleSettings.cycleLength);
  if(!Number.isInteger(length)||length<15||length>60) return {message:'Проверь среднюю длину цикла в настройках.'};
  const periodLength=Number(cycleSettings.periodLength);
- const nextPeriod=shift(latest,length);
- const ovulation=shift(nextPeriod,-14);
- const windows=[[shift(ovulation,-5),shift(ovulation,1)]];
- const horizon=shift(nextPeriod,length*2-1);
+ const elapsed=latest<=today ? Math.floor((today-latest)/dayMs) : 0;
+ const currentStart=shift(latest,Math.floor(elapsed/length)*length);
+ const nextPeriod=shift(currentStart,length);
+ let fertilePeriod=nextPeriod;
+ let ovulation=shift(fertilePeriod,-14);
+ while(shift(ovulation,1)<today){
+   fertilePeriod=shift(fertilePeriod,length);
+   ovulation=shift(fertilePeriod,-14);
+ }
+ const windows=[0,1].map(offset=>{
+   const day=shift(ovulation,offset*length);
+   return [shift(day,-5),shift(day,1)];
+ });
+ const horizon=shift(fertilePeriod,length*2-1);
  return {windows,length,horizon,latest,nextPeriod,ovulation,periodLength,observedCycles:observedLengths.length};
 }
 function renderMatches(estimate){
