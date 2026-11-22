@@ -34,8 +34,27 @@ if (location.protocol === 'https:') {
 <body>
 <main>
 <header><h1>+9<span aria-hidden="true">✦</span></h1><p>Знаки зодиака и календарь цикла</p></header>
-<nav role="tablist" aria-label="Разделы"><button role="tab" id="plan-tab" aria-controls="plan" aria-selected="true">По знаку</button><button role="tab" id="cycle-tab" aria-controls="cycle" aria-selected="false" tabindex="-1">Мой цикл</button></nav>
-<section id="plan" role="tabpanel" aria-labelledby="plan-tab">
+<nav role="tablist" aria-label="Разделы" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+<button role="tab" id="today-tab" aria-controls="today" aria-selected="true">Если сегодня</button>
+<button role="tab" id="plan-tab" aria-controls="plan" aria-selected="false" tabindex="-1">Подбор по знаку</button>
+<button role="tab" id="cycle-tab" aria-controls="cycle" aria-selected="false" tabindex="-1">Мой цикл</button>
+</nav>
+<section id="today" role="tabpanel" aria-labelledby="today-tab">
+<div class="card">
+<h2>Какой знак может быть у ребёнка?</h2>
+<div class="gap" aria-live="polite">
+<p class="small" id="today-conception"></p>
+<p class="dates" id="today-sign"></p>
+<p id="today-due"></p>
+<p class="small gap" id="today-boundaries"></p>
+</div>
+<div class="line gap">
+<button class="field" id="today-earlier">На день раньше</button>
+<button class="field" id="today-later">На день позже</button>
+</div>
+</div>
+</section>
+<section id="plan" role="tabpanel" aria-labelledby="plan-tab" hidden>
 <div class="card">
 <h2>Какой знак выбираешь?</h2>
 <div class="signs" id="signs"></div>
@@ -339,7 +358,31 @@ $('jump').addEventListener('click',()=>{
  displayMonth=date(firstConception.getUTCFullYear(),firstConception.getUTCMonth()+1);
  renderCalendar();
 });
-const tabs=[$('plan-tab'),$('cycle-tab')];
+let conceptionOffset = 0;
+function renderToday(){
+ const conception = shift(today, conceptionOffset);
+ const due = shift(conception, 266);
+ const sign = signAt(due);
+ const index = signs.indexOf(sign);
+ const previous = signs[(index + signs.length - 1) % signs.length];
+ const next = signs[(index + 1) % signs.length];
+ const year = due.getUTCFullYear();
+ const [first, last] = signWindow(index, sign[2] > due.getUTCMonth() + 1 ? year - 1 : year);
+ $('today-conception').textContent = 'Если зачать ' + (conceptionOffset === 0 ? 'сегодня, ' : '') + full(conception);
+ $('today-sign').textContent = sign[0] + ' ' + sign[1];
+ $('today-due').textContent = 'Расчётная дата родов — ' + full(due);
+ $('today-boundaries').textContent = 'Если роды будут до ' + format(first, {day:'numeric', month:'long'}) +
+   ', соседний знак — ' + previous[1] + '. После ' + format(last, {day:'numeric', month:'long'}) + ' — ' + next[1] + '.';
+}
+$('today-earlier').addEventListener('click',()=>{
+ conceptionOffset -= 1;
+ renderToday();
+});
+$('today-later').addEventListener('click',()=>{
+ conceptionOffset += 1;
+ renderToday();
+});
+const tabs=[$('today-tab'),$('plan-tab'),$('cycle-tab')];
 $('open-cycle').addEventListener('click',()=>{
  activate($('cycle-tab'));
  $('cycle-tab').focus();
@@ -357,11 +400,14 @@ tabs.forEach(tab=>{
  tab.addEventListener('keydown',event=>{
    if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
    event.preventDefault();
-   const target=event.key==='Home'?tabs[0]:event.key==='End'?tabs[1]:tabs.find(item=>item!==tab);
+   const direction = event.key === 'ArrowLeft' ? -1 : 1;
+   const adjacent = (tabs.indexOf(tab) + direction + tabs.length) % tabs.length;
+   const target = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1) : tabs[adjacent];
    activate(target);
    target.focus();
  });
 });
+renderToday();
 renderPlan();
 </script>
 </body>
