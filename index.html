@@ -75,7 +75,7 @@ body{background:#fff9f1}main{max-width:480px;padding:22px 20px calc(104px + env(
 <p class="eyebrow">Даты зачатия</p>
 <p class="dates" id="window"></p>
 <p class="small" id="due-window"></p>
-<p class="small gap" id="plan-overlap"></p><button class="primary gap" id="open-cycle">Сверить с циклом</button>
+<p class="small gap" id="plan-overlap"></p><button class="primary gap" id="open-cycle">Совпадает ли с моим циклом?</button><section class="card gap" id="comparison-result" hidden aria-live="polite" tabindex="-1"><p class="eyebrow" id="comparison-title"></p><p class="small gap" id="comparison-dates"></p><p class="small gap" id="comparison-message"></p><button class="field gap" id="comparison-next" type="button">Показать в календаре</button></section>
 <p class="small gap">Даже если предполагаемая дата родов попадает в период знака, ребёнок может родиться под соседним знаком.</p>
 </div>
 <details class="scenario-details" id="scenario-panel"><summary>Если роды начнутся раньше или позже</summary><div class="card">
@@ -449,9 +449,25 @@ function renderMatches(estimate){
    matches.append(button);
  }
 }
+var comparisonTarget=null;
+function updateComparison(){
+ if($('comparison-result').hidden)return;
+ const estimate=fertileEstimate();
+ $('comparison-dates').textContent=signs[selected][1]+' · '+$('year').value+'. Даты зачатия по знаку: '+range(firstConception,lastConception)+'.';
+ const found=[];
+ for(const window of estimate.windows||[])for(let d=window[0];d<=window[1];d=shift(d,1))if(d>=today&&d>=firstConception&&d<=lastConception)found.push(d);
+ const unavailable=!estimate.windows;
+ const beyond=estimate.windows&&firstConception>estimate.windows.at(-1)[1];
+ const past=lastConception<today;
+ $('comparison-title').textContent=unavailable?'Добавь данные цикла':past?'Этот период уже прошёл':beyond?'Пока рано сравнивать':found.length?'Есть совпадение':'Совпадений не найдено';
+ $('comparison-message').textContent=unavailable?estimate.message:past?'Выбери другой год рождения для сравнения с предстоящими днями цикла.':beyond?'Сейчас расчёт цикла охватывает '+range(estimate.windows[0][0],estimate.windows.at(-1)[1])+'. Выбранный период позже. Отсутствие результата не означает, что даты не совпадут.':found.length?'Примерное пересечение: '+range(found[0],found.at(-1))+'. Это календарная оценка, а не подтверждение овуляции.':'В показанных примерных фертильных окнах пересечений с выбранным знаком нет. Оценка изменится с новыми данными цикла.';
+ comparisonTarget=unavailable?null:found[0]||estimate.windows[0][0];
+ $('comparison-next').textContent=unavailable?'Добавить данные цикла':past?'Выбрать другой год':'Показать в календаре';
+}
 function renderCalendar(){
  const estimate=fertileEstimate();
  renderMatches(estimate);
+ updateComparison();
  const year=displayMonth.getUTCFullYear(), month=displayMonth.getUTCMonth()+1;
  $('month').textContent=format(displayMonth,{month:'long',year:'numeric'});
  const grid=$('days');
@@ -669,9 +685,23 @@ const navIcons=['<rect x="4" y="6" width="16" height="15" rx="3"/><path d="M8 3v
 [3,4,5,6,7,8,9,10,11,0,1,2].forEach(index=>$('signs').append(signButtons[index]));
 const tabs=[$('today-tab'),$('plan-tab'),$('cycle-tab')];
 $('open-cycle').addEventListener('click',()=>{
- activate($('cycle-tab'));
- $('cycle-tab').focus();
+ $('comparison-result').hidden=false;
+ updateComparison();
+ $('comparison-result').scrollIntoView({behavior:'smooth',block:'center'});
+ $('comparison-result').focus({preventScroll:true});
 });
+$('comparison-next').onclick=()=>{
+ const estimate=fertileEstimate();
+ if(estimate.windows&&lastConception<today){$('year').focus();return;}
+ activate($('cycle-tab'));
+ if(!estimate.windows){
+  $('cycle-settings').open=true;$('cycle-settings').scrollIntoView({behavior:'smooth',block:'start'});$('last-period').focus({preventScroll:true});
+ }else{
+  const target=comparisonTarget||today;
+  displayMonth=date(target.getUTCFullYear(),target.getUTCMonth()+1);
+  renderCalendar();$('month').scrollIntoView({behavior:'smooth',block:'center'});
+ }
+};
 function activate(tab){
  document.body.dataset.screen=tab.id.replace("-tab","");
  window.scrollTo({top:0,behavior:"instant"});
