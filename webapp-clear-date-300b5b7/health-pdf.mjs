@@ -30,6 +30,15 @@ export function summaryPeriods(items){
  }
  if(!result.length)throw Error('В таблице нет распознанных месячных.');return result;
 }
+export function summarySettings(items){
+ const rows=[];
+ for(const i of items){let r=rows.find(r=>Math.abs(r.y-i.transform[5])<3);if(!r){r={y:i.transform[5],items:[]};rows.push(r);}r.items.push(i);}
+ const lines=rows.map(r=>r.items.sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ').normalize('NFKC').replace(/ĸ/g,'к').replace(/([а-я])\s+(?=[а-я])/gi,'$1'));
+ const get=label=>{const line=lines.find(l=>l.replace(/\s/g,'').includes(label));const match=line?.match(/(\d+)\s*д/);return match?+match[1]:null;};
+ const cycleLength=get('Средняядлительностьцикла'),periodLength=get('Средняядлительностьмесячных');
+ if(cycleLength>=15&&cycleLength<=60&&periodLength>=1&&periodLength<=15)return {cycleLength,periodLength,lengthSource:'health-pdf'};
+ return null;
+}
 export async function readHealthPdf(file){
  if(file.size>20*1024*1024)throw Error('Выбери PDF-отчёт о цикле до 20 МБ.');
  const pdfjs=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
@@ -39,6 +48,6 @@ export async function readHealthPdf(file){
  const page=await doc.getPage(1);const {items}=await page.getTextContent();const periods=summaryPeriods(items);
  const dates=new Set();const today=new Date().toISOString().slice(0,10);
  for(const p of periods)for(let i=0;i<p.count;i++){const d=new Date(p.start+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+i);const iso=d.toISOString().slice(0,10);if(iso<=today)dates.add(iso);}
- return [...dates].sort();
+ const result=[...dates].sort();result.cycleSettings=summarySettings(items);return result;
  }finally{if(doc)await doc.destroy();}
 }

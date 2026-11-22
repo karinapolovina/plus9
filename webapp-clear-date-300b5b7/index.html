@@ -211,7 +211,7 @@ try {
 let cycleSettings={cycleLength:28,periodLength:5,lastPeriod:''};
 try {
  const savedSettings=JSON.parse(localStorage.getItem(settingsKey)||'{}');
- cycleSettings={...cycleSettings,...savedSettings};
+ cycleSettings={...cycleSettings,...savedSettings,lengthSource:savedSettings.lengthSource||(savedSettings.cycleLength?'manual':undefined)};
 } catch {}
 
 function signWindow(index,year){
@@ -342,7 +342,7 @@ function saveCycleSettings(){
    $('settings-status').textContent='Проверь значения длины цикла, месячных и дату.';
    return;
  }
- cycleSettings={cycleLength,periodLength,lastPeriod};
+ cycleSettings={cycleLength,periodLength,lastPeriod,lengthSource:'manual'};
  try {
    localStorage.setItem(settingsKey,JSON.stringify(cycleSettings));
    $('settings-status').textContent='Настройки сохранены на этом устройстве.';
@@ -371,7 +371,8 @@ function fertileEstimate(){
  if(!latest || !Number.isFinite(+latest)) return {message:'Укажи первый день последних месячных, чтобы начать прогноз.'};
  const observedLengths=starts.slice(1).map((day,index)=>(day-starts[index])/dayMs)
    .filter(length=>length>=15 && length<=60);
- const length=observedLengths.length
+ const explicitLength=Boolean(cycleSettings.lengthSource);
+ const length=!explicitLength&&observedLengths.length
    ? Math.round(observedLengths.reduce((sum,value)=>sum+value,0)/observedLengths.length)
    : Number(cycleSettings.cycleLength);
  if(!Number.isInteger(length)||length<15||length>60) return {message:'Проверь среднюю длину цикла в настройках.'};
@@ -433,7 +434,7 @@ function renderMatches(estimate){
  $('cycle-summary').textContent=selectedSign+'. Следующие месячные ожидаются '+full(estimate.nextPeriod)+
    ' примерно на '+daysLabel(estimate.periodLength)+'. Овуляция ориентировочно '+full(estimate.ovulation)+
    ', фертильное окно '+range(...windows[0])+'. '+(estimate.observedCycles
-     ? 'Уточнено по '+daysLabel(estimate.observedCycles)+' интервалам цикла. '
+     ? 'Использована длина цикла '+estimate.length+' дн. '
      : 'Пока использованы введённые настройки. ')+message;
  const sexMatches=[...sexDays].filter(day=>day>=iso(today) && day<=iso(horizon) && windows.some(([first,last])=>parse(day)>=first && parse(day)<=last));
  $('sex-matches').replaceChildren();
@@ -609,7 +610,7 @@ function floCalendarDay(value) {
 
 function setupPeriodImport(source,readDates,fileError){
  const get=name=>$(source+'-'+name);
- let pendingDates=[],readVersion=0,selectedFile=null;
+ let pendingDates=[],pendingSettings=null,readVersion=0,selectedFile=null;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='field gap';cancel.textContent='Отменить чтение';cancel.hidden=true;get('status').after(cancel);
  const start=document.createElement('button');start.type='button';start.className='primary gap';start.textContent='Начать чтение';start.hidden=true;get('status').after(start);
  const clearFlag=()=>{if(source==='health')try{localStorage.removeItem('plus9-health-reading');}catch{}};
@@ -621,19 +622,20 @@ function setupPeriodImport(source,readDates,fileError){
   if(source==='health')try{localStorage.setItem('plus9-health-reading','1');}catch{}
   try{
    const isPdf=source==='health'&&(/\.pdf$/i.test(file.name)||file.type==='application/pdf');
-   const dates=isPdf?await (await import('./health-pdf.mjs?v=1')).readHealthPdf(file):source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
+   const dates=isPdf?await (await import('./health-pdf.mjs?v=2')).readHealthPdf(file):source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
    if(!isCurrent())return;
-   clearFlag();cancel.hidden=true;pendingDates=dates.filter(day=>!marked.has(day));
+   clearFlag();cancel.hidden=true;pendingSettings=isPdf?dates.cycleSettings:null;pendingDates=dates.filter(day=>!marked.has(day));
    get('status').textContent=pendingDates.length?'Новых дат: '+pendingDates.length+'. Проверь их перед добавлением.':dates.length?'Все найденные даты уже есть в календаре.':'В файле нет записей о месячных.';
+   if(pendingSettings)get('status').textContent+=' Параметры из PDF: цикл '+pendingSettings.cycleLength+' дн., месячные '+pendingSettings.periodLength+' дн. Они будут сохранены при добавлении.';
    if(isPdf)get('status').textContent+=' PDF: дни восстановлены подряд по началу и длительности из таблицы. Если были пропуски, поправь их в календаре.';
    for(const day of pendingDates.slice(0,120)){const item=document.createElement('li');item.textContent=full(parse(day));get('dates').append(item);}
    if(pendingDates.length>120){const note=document.createElement('li');note.textContent='Показаны первые 120 дат. Всего будет добавлено: '+pendingDates.length+'.';get('dates').append(note);}
-   get('preview').hidden=get('apply').hidden=!pendingDates.length;
+   get('preview').hidden=get('apply').hidden=!pendingDates.length&&!pendingSettings;
   }catch(error){if(isCurrent()){clearFlag();cancel.hidden=true;start.hidden=false;get('status').textContent=source==='health'?error.message:fileError;}}
  }
  start.onclick=()=>{if(selectedFile)processFile(selectedFile,readVersion);};
  get('file').addEventListener('change',event=>{
-  readVersion++;if(source==='health')stopHealthImport();clearFlag();selectedFile=event.currentTarget.files[0]||null;pendingDates=[];
+  readVersion++;if(source==='health')stopHealthImport();clearFlag();selectedFile=event.currentTarget.files[0]||null;pendingDates=[];pendingSettings=null;
   get('apply').hidden=get('preview').hidden=true;get('dates').replaceChildren();cancel.hidden=true;start.hidden=!selectedFile;
   if(!selectedFile){get('status').textContent='';return;}
   if(source==='health'){get('status').textContent='Файл выбран: '+(selectedFile.size/1048576).toFixed(1)+' МБ. Нажми «Начать чтение». Пока файл не читается.';}
@@ -642,7 +644,12 @@ function setupPeriodImport(source,readDates,fileError){
  get('apply').onclick=()=>{
   const dates=pendingDates.filter(day=>!marked.has(day)),combined=new Set([...marked,...dates]);
   try{localStorage.setItem(storageKey,JSON.stringify([...combined]));}catch{get('status').textContent='Не удалось сохранить даты на этом устройстве.';return;}
-  marked=combined;pendingDates=[];selectedFile=null;get('dates').replaceChildren();get('preview').hidden=get('apply').hidden=start.hidden=true;get('file').value='';get('status').textContent='Добавлено дат: '+dates.length+'.';renderCalendar();
+  if(pendingSettings){
+   cycleSettings={...cycleSettings,...pendingSettings};
+   try{localStorage.setItem(settingsKey,JSON.stringify(cycleSettings));}catch{get('status').textContent='Даты сохранены, но параметры цикла не удалось сохранить.';return;}
+   $('cycle-length').value=cycleSettings.cycleLength;$('period-length').value=cycleSettings.periodLength;
+  }
+  marked=combined;pendingDates=[];pendingSettings=null;selectedFile=null;get('dates').replaceChildren();get('preview').hidden=get('apply').hidden=start.hidden=true;get('file').value='';get('status').textContent='Добавлено дат: '+dates.length+'.';renderCalendar();
  };
  if(source==='health'){
   const external=document.createElement('a');external.textContent='Открыть импорт во внешнем браузере';external.href=new URL('?view=cycle&import=health-worker2',location.href).href;external.target='_blank';external.rel='noopener noreferrer';external.className='small gap';external.style.display='block';
