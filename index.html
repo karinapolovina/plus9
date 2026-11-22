@@ -121,6 +121,15 @@ if (location.protocol === 'https:') {
 <details id="health-preview" hidden><summary>Посмотреть даты</summary><ul id="health-dates"></ul></details>
 <button class="field gap" id="health-apply" hidden>Добавить даты</button>
 </div>
+<div class="card">
+<h2>Импорт из Flo</h2>
+<p class="small gap">Запроси JSON через меню Flo → «Помощь» → «Связаться с нами». Распакуй полученный архив и выбери JSON-файл. +9 прочитает даты месячных на этом устройстве.</p>
+<div class="gap"><label for="flo-file">Файл Flo (.json)</label>
+<input class="field" id="flo-file" type="file" accept=".json,application/json" style="display:block;max-width:100%"></div>
+<p class="small gap" id="flo-status" role="status"></p>
+<details id="flo-preview" hidden><summary>Посмотреть даты Flo</summary><ul id="flo-dates"></ul></details>
+<button class="field gap" id="flo-apply" hidden>Добавить даты Flo</button>
+</div>
 <p class="small" id="storage" role="status">Отметки хранятся в этом браузере или на этом устройстве в Telegram. </p>
 </section>
 </main>
@@ -396,55 +405,96 @@ function healthPeriodDays(xml) {
  return [...dates].sort();
 }
 
-let pendingHealthDates = [];
-$('health-file').addEventListener('change', async event => {
- const input = event.currentTarget;
- const file = input.files[0];
- pendingHealthDates = [];
- $('health-apply').hidden = true;
- $('health-preview').hidden = true;
- $('health-dates').replaceChildren();
- $('health-status').textContent = file ? 'Читаем файл…' : '';
- if (!file) return;
- try {
-   const xml = await file.text();
-   if (input.files[0] !== file) return;
-   const dates = healthPeriodDays(xml);
-   pendingHealthDates = dates.filter(day => !marked.has(day));
-   $('health-status').textContent = pendingHealthDates.length
-     ? 'Новых дат: ' + pendingHealthDates.length + '. Проверь их перед добавлением.'
-     : dates.length ? 'Все найденные даты уже есть в календаре.' : 'В файле нет записей о месячных.';
-   for (const day of pendingHealthDates) {
-     const item = document.createElement('li');
-     item.textContent = full(parse(day));
-     $('health-dates').append(item);
+function floPeriodDays(json) {
+ const data = JSON.parse(json.replace(/^\uFEFF/, ''));
+ if (!data || typeof data !== 'object') throw new Error('Нужен JSON-файл с данными Flo.');
+ const dates = new Set();
+ const records = [data];
+ while (records.length) {
+   const record = records.pop();
+   if (Array.isArray(record)) {
+     for (const entry of record) if (entry && typeof entry === 'object') records.push(entry);
+     continue;
    }
-   $('health-preview').hidden = $('health-apply').hidden = !pendingHealthDates.length;
- } catch (error) {
-   if (input.files[0] === file) {
-     $('health-status').textContent = error.message === 'Нужен файл export.xml из архива Apple «Здоровье».'
-       ? error.message : 'Не удалось прочитать файл. Попробуй выбрать export.xml ещё раз.';
+   if (record.is_predicted === true || record.isPredicted === true || record.predicted === true ||
+       record.pregnant === true || record.deleted === true || record.is_deleted === true ||
+       /^(?:predicted|forecast|estimated|deleted)$/i.test(record.status)) continue;
+   const start = floCalendarDay(record.period_start_date ?? record.periodStartDate);
+   const end = floCalendarDay(record.period_end_date ?? record.periodEndDate) ?? start;
+   if (start && end >= start && end - start < 366 * dayMs) {
+     for (let day = start; day <= end && day <= today; day = shift(day, 1)) dates.add(iso(day));
+   }
+   for (const [key, value] of Object.entries(record)) {
+     if (value && typeof value === 'object' && !/predict|forecast|estimat|delet/i.test(key)) records.push(value);
    }
  }
-});
+ return [...dates].sort();
+}
 
-$('health-apply').addEventListener('click', () => {
- const dates = pendingHealthDates.filter(day => !marked.has(day));
- const combined = new Set([...marked, ...dates]);
- try {
-   localStorage.setItem(storageKey, JSON.stringify([...combined]));
- } catch {
-   $('health-status').textContent = 'Не удалось сохранить даты на этом устройстве.';
-   return;
+function floCalendarDay(value) {
+ if (typeof value !== 'string') return null;
+ if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+   const day = parse(value);
+   return Number.isFinite(+day) && iso(day) === value ? day : null;
  }
- marked = combined;
- pendingHealthDates = [];
- $('health-dates').replaceChildren();
- $('health-preview').hidden = $('health-apply').hidden = true;
- $('health-file').value = '';
- $('health-status').textContent = 'Добавлено дат: ' + dates.length + '.';
- renderCalendar();
-});
+ if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)) return null;
+ const timestamp = new Date(value.replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
+ return Number.isFinite(+timestamp) ? date(timestamp.getFullYear(), timestamp.getMonth()+1, timestamp.getDate()) : null;
+}
+
+function setupPeriodImport(source, readDates, fileError) {
+ const get = name => $(source + '-' + name);
+ let pendingDates = [];
+ get('file').addEventListener('change', async event => {
+  const input = event.currentTarget;
+  const file = input.files[0];
+  pendingDates = [];
+  get('apply').hidden = true;
+  get('preview').hidden = true;
+  get('dates').replaceChildren();
+  get('status').textContent = file ? 'Читаем файл…' : '';
+  if (!file) return;
+  try {
+    const contents = await file.text();
+    if (input.files[0] !== file) return;
+    const dates = readDates(contents);
+    pendingDates = dates.filter(day => !marked.has(day));
+    get('status').textContent = pendingDates.length
+      ? 'Новых дат: ' + pendingDates.length + '. Проверь их перед добавлением.'
+      : dates.length ? 'Все найденные даты уже есть в календаре.' : 'В файле нет записей о месячных.';
+    for (const day of pendingDates) {
+      const item = document.createElement('li');
+      item.textContent = full(parse(day));
+      get('dates').append(item);
+    }
+    get('preview').hidden = get('apply').hidden = !pendingDates.length;
+  } catch {
+    if (input.files[0] === file) {
+      get('status').textContent = fileError;
+    }
+  }
+ });
+
+ get('apply').addEventListener('click', () => {
+  const dates = pendingDates.filter(day => !marked.has(day));
+  const combined = new Set([...marked, ...dates]);
+  try {
+    localStorage.setItem(storageKey, JSON.stringify([...combined]));
+  } catch {
+    get('status').textContent = 'Не удалось сохранить даты на этом устройстве.';
+    return;
+  }
+  marked = combined;
+  pendingDates = [];
+  get('dates').replaceChildren();
+  get('preview').hidden = get('apply').hidden = true;
+  get('file').value = '';
+  get('status').textContent = 'Добавлено дат: ' + dates.length + '.';
+  renderCalendar();
+ });
+}
+setupPeriodImport('health', healthPeriodDays, 'Не удалось прочитать файл. Выбери export.xml из архива Apple «Здоровье».');
+setupPeriodImport('flo', floPeriodDays, 'Не удалось прочитать JSON. Выбери распакованный файл из выгрузки Flo.');
 
 let conceptionOffset = 0;
 function renderToday(){
