@@ -45,6 +45,7 @@ if (location.protocol === 'https:') {
 <div class="line gap">
 <label class="small" for="today-date">Дата зачатия</label>
 <input class="field" id="today-date" type="date" min="1900-01-01" max="2200-12-31" required>
+<button class="field" id="today-reset">Сегодня</button>
 </div>
 <div class="gap" aria-live="polite">
 <p class="small" id="today-conception"></p>
@@ -385,6 +386,10 @@ function renderToday(){
 $('today-date').addEventListener('change', event => {
  const field = event.currentTarget;
  if (field.validity.valid) conceptionOffset = (parse(field.value) - today) / dayMs;
+ renderToday();
+});
+$('today-reset').addEventListener('click',()=>{
+ conceptionOffset = 0;
  renderToday();
 });
 $('today-earlier').addEventListener('click',()=>{
