@@ -167,6 +167,7 @@ const date = (year,month,day=1) => new Date(Date.UTC(year,month-1,day));
 const shift = (value,days) => new Date(+value+days*dayMs);
 const iso = value => value.toISOString().slice(0,10);
 const parse = value => new Date(value+'T00:00:00Z');
+function validDay(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(+parse(value))&&iso(parse(value))===value;}
 const format = (value, options) => new Intl.DateTimeFormat('ru-RU',{...options,timeZone:'UTC'}).format(value);
 const full = value => format(value,{day:'numeric',month:'long',year:'numeric'});
 const range = (first,last) => first.getUTCFullYear()===last.getUTCFullYear()
@@ -197,21 +198,26 @@ $('day-save').onclick=()=>{
 };
 try {
  const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
- if (Array.isArray(saved)) marked = new Set(saved.filter(value => typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value)));
+ if (Array.isArray(saved)) marked = new Set(saved.filter(value => validDay(value)));
 } catch {
  $('storage').textContent = 'Хранилище недоступно. Отметки могут исчезнуть после закрытия приложения.';
 }
 let selected=7, displayMonth=date(now.getFullYear(),now.getMonth()+1), firstConception, lastConception;
 try {
  const savedSex = JSON.parse(localStorage.getItem(sexStorageKey) || '[]');
- if (Array.isArray(savedSex)) sexDays = new Set(savedSex.filter(value => typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value)));
+ if (Array.isArray(savedSex)) sexDays = new Set(savedSex.filter(value => validDay(value)));
 } catch {
  $('storage').textContent = 'Не удалось прочитать сохранённые отметки секса.';
 }
 let cycleSettings={cycleLength:28,periodLength:5,lastPeriod:''};
 try {
  const savedSettings=JSON.parse(localStorage.getItem(settingsKey)||'{}');
- cycleSettings={...cycleSettings,...savedSettings,lengthSource:savedSettings.lengthSource||(savedSettings.cycleLength?'manual':undefined)};
+ if(savedSettings&&typeof savedSettings==='object'){
+  const length=Number(savedSettings.cycleLength),duration=Number(savedSettings.periodLength);
+  if(Number.isInteger(length)&&length>=15&&length<=60){cycleSettings.cycleLength=length;cycleSettings.lengthSource=savedSettings.lengthSource||'manual';}
+  if(Number.isInteger(duration)&&duration>=1&&duration<=15)cycleSettings.periodLength=duration;
+  if(validDay(savedSettings.lastPeriod)&&parse(savedSettings.lastPeriod)<=today)cycleSettings.lastPeriod=savedSettings.lastPeriod;
+ }
 } catch {}
 
 function signWindow(index,year){
@@ -338,27 +344,30 @@ function saveCycleSettings(){
  const lastPeriod=$('last-period').value;
  if(!Number.isInteger(cycleLength)||cycleLength<15||cycleLength>60||
     !Number.isInteger(periodLength)||periodLength<1||periodLength>15||
-    (lastPeriod && !/^\d{4}-\d{2}-\d{2}$/.test(lastPeriod))){
+    (lastPeriod && (!validDay(lastPeriod)||parse(lastPeriod)>today))){
    $('settings-status').textContent='Проверь значения длины цикла, месячных и дату.';
    return;
  }
- cycleSettings={cycleLength,periodLength,lastPeriod,lengthSource:'manual'};
+ const updated={cycleLength,periodLength,lastPeriod,lengthSource:'manual'};
  try {
-   localStorage.setItem(settingsKey,JSON.stringify(cycleSettings));
+   localStorage.setItem(settingsKey,JSON.stringify(updated));
+   cycleSettings=updated;
    $('settings-status').textContent='Настройки сохранены на этом устройстве.';
  } catch {
-   $('settings-status').textContent='Не удалось сохранить настройки на этом устройстве.';
+   $('settings-status').textContent='Не удалось сохранить настройки на этом устройстве.';return;
  }
  renderCalendar();
 }
 $('cycle-length').value=cycleSettings.cycleLength;
 $('period-length').value=cycleSettings.periodLength;
 $('last-period').value=cycleSettings.lastPeriod;
+$('last-period').max=iso(today);
  $('clear-last-period').addEventListener('click',()=>{
   $('last-period').value='';
   saveCycleSettings();
  });
 for(const id of ['cycle-length','period-length','last-period']){
+ $(id).addEventListener('input',saveCycleSettings);
  $(id).addEventListener('change',saveCycleSettings);
 }
 
@@ -435,7 +444,7 @@ function renderMatches(estimate){
    ' примерно на '+daysLabel(estimate.periodLength)+'. Овуляция ориентировочно '+full(estimate.ovulation)+
    ', фертильное окно '+range(...windows[0])+'. '+(estimate.observedCycles
      ? 'Использована длина цикла '+estimate.length+' дн. '
-     : 'Пока использованы введённые настройки. ')+message;
+     : 'Использована длина цикла '+estimate.length+' дн. ')+message;
  const sexMatches=[...sexDays].filter(day=>day>=iso(today) && day<=iso(horizon) && windows.some(([first,last])=>parse(day)>=first && parse(day)<=last));
  $('sex-matches').replaceChildren();
  const sexTitle=document.createElement('p');
@@ -614,7 +623,7 @@ function setupPeriodImport(source,readDates,fileError){
  const cancel=document.createElement('button');cancel.type='button';cancel.className='field gap';cancel.textContent='Отменить чтение';cancel.hidden=true;get('status').after(cancel);
  const start=document.createElement('button');start.type='button';start.className='primary gap';start.textContent='Начать чтение';start.hidden=true;get('status').after(start);
  const clearFlag=()=>{if(source==='health')try{localStorage.removeItem('plus9-health-reading');}catch{}};
- cancel.onclick=()=>{readVersion++;if(source==='health')stopHealthImport();clearFlag();pendingDates=[];selectedFile=null;get('file').value='';cancel.hidden=start.hidden=true;get('preview').hidden=get('apply').hidden=true;get('status').textContent='Чтение отменено. Сохранённые отметки не изменились.';};
+ cancel.onclick=()=>{readVersion++;if(source==='health')stopHealthImport();clearFlag();pendingDates=[];pendingSettings=null;selectedFile=null;get('file').value='';cancel.hidden=start.hidden=true;get('preview').hidden=get('apply').hidden=true;get('status').textContent='Чтение отменено. Сохранённые отметки не изменились.';};
  async function processFile(file,version){
   const isCurrent=()=>version===readVersion&&selectedFile===file;
   start.hidden=true;cancel.hidden=false;
@@ -622,6 +631,7 @@ function setupPeriodImport(source,readDates,fileError){
   if(source==='health')try{localStorage.setItem('plus9-health-reading','1');}catch{}
   try{
    const isPdf=source==='health'&&(/\.pdf$/i.test(file.name)||file.type==='application/pdf');
+   if(source==='flo'&&file.size>20*1048576)throw new Error('Файл Flo слишком большой. Максимум 20 МБ.');
    const dates=isPdf?await (await import('./health-pdf.mjs?v=2')).readHealthPdf(file):source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
    if(!isCurrent())return;
    clearFlag();cancel.hidden=true;pendingSettings=isPdf?dates.cycleSettings:null;pendingDates=dates.filter(day=>!marked.has(day));
@@ -631,7 +641,7 @@ function setupPeriodImport(source,readDates,fileError){
    for(const day of pendingDates.slice(0,120)){const item=document.createElement('li');item.textContent=full(parse(day));get('dates').append(item);}
    if(pendingDates.length>120){const note=document.createElement('li');note.textContent='Показаны первые 120 дат. Всего будет добавлено: '+pendingDates.length+'.';get('dates').append(note);}
    get('preview').hidden=get('apply').hidden=!pendingDates.length&&!pendingSettings;
-  }catch(error){if(isCurrent()){clearFlag();cancel.hidden=true;start.hidden=false;get('status').textContent=source==='health'?error.message:fileError;}}
+  }catch(error){if(isCurrent()){clearFlag();cancel.hidden=true;start.hidden=false;get('status').textContent=error.message||fileError;}}
  }
  start.onclick=()=>{if(selectedFile)processFile(selectedFile,readVersion);};
  get('file').addEventListener('change',event=>{
@@ -639,16 +649,21 @@ function setupPeriodImport(source,readDates,fileError){
   get('apply').hidden=get('preview').hidden=true;get('dates').replaceChildren();cancel.hidden=true;start.hidden=!selectedFile;
   if(!selectedFile){get('status').textContent='';return;}
   if(source==='health'){get('status').textContent='Файл выбран: '+(selectedFile.size/1048576).toFixed(1)+' МБ. Нажми «Начать чтение». Пока файл не читается.';}
-  else processFile(selectedFile,readVersion);
+  else {start.hidden=true;processFile(selectedFile,readVersion);}
  });
  get('apply').onclick=()=>{
   const dates=pendingDates.filter(day=>!marked.has(day)),combined=new Set([...marked,...dates]);
-  try{localStorage.setItem(storageKey,JSON.stringify([...combined]));}catch{get('status').textContent='Не удалось сохранить даты на этом устройстве.';return;}
-  if(pendingSettings){
-   cycleSettings={...cycleSettings,...pendingSettings};
-   try{localStorage.setItem(settingsKey,JSON.stringify(cycleSettings));}catch{get('status').textContent='Даты сохранены, но параметры цикла не удалось сохранить.';return;}
-   $('cycle-length').value=cycleSettings.cycleLength;$('period-length').value=cycleSettings.periodLength;
+  const updatedSettings=pendingSettings?{...cycleSettings,...pendingSettings}:cycleSettings;
+  let oldDates,oldSettings;
+  try{
+   oldDates=localStorage.getItem(storageKey);oldSettings=localStorage.getItem(settingsKey);
+   localStorage.setItem(storageKey,JSON.stringify([...combined]));
+   if(pendingSettings)localStorage.setItem(settingsKey,JSON.stringify(updatedSettings));
+  }catch{
+   try{for(const [key,value] of [[storageKey,oldDates],[settingsKey,oldSettings]]){if(value===null)localStorage.removeItem(key);else if(value!==undefined)localStorage.setItem(key,value);}}catch{}
+   get('status').textContent='Не удалось сохранить импорт. Даты и параметры не применены.';return;
   }
+  if(pendingSettings){cycleSettings=updatedSettings;$('cycle-length').value=cycleSettings.cycleLength;$('period-length').value=cycleSettings.periodLength;}
   marked=combined;pendingDates=[];pendingSettings=null;selectedFile=null;get('dates').replaceChildren();get('preview').hidden=get('apply').hidden=start.hidden=true;get('file').value='';get('status').textContent='Добавлено дат: '+dates.length+'.';renderCalendar();
  };
  if(source==='health'){
