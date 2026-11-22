@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#fff9f1">
+<meta name="theme-color" content="#1e172a">
 <title>+9</title>
 <script>
 if (location.protocol === 'https:') {
@@ -25,21 +25,23 @@ if (location.protocol === 'https:') {
 }
 </script>
 <style>
-:root{color-scheme:light;--bg:#fff9f1;--card:#fffcf7;--border:#f2dacc;--text:#262522;--muted:#70665f;--pink:#e84d37;--gold:#a33d2b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:540px;margin:auto;padding:20px 18px calc(110px + env(safe-area-inset-bottom))}header{margin:0 4px 24px}h1,h2,p{margin:0}h1{font-size:44px;line-height:1;font-weight:850;letter-spacing:-4px;color:var(--pink)}header p{font-size:12px;color:var(--muted);margin-top:6px}h2{font-size:28px;line-height:1.12;letter-spacing:-1px;font-weight:780}button,input,select{font:inherit}button,select,input{color:inherit;background:transparent;border:1px solid var(--border);border-radius:14px;min-height:44px;max-width:100%}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #20799e;outline-offset:3px}nav{position:fixed;z-index:10;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,540px);display:grid;gap:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff9f1;border-top:1px solid var(--border)}nav button{border:0;border-radius:10px;font-size:12px;padding:4px 0;line-height:1.4;min-width:0;color:var(--muted)}nav button svg{width:23px;height:23px;display:block;margin:0 auto 5px}nav button[aria-selected=true]{color:var(--pink);font-weight:750;background:#fff0e7}.card{padding:20px;border:1px solid var(--border);background:var(--card);border-radius:24px;margin-bottom:14px}.signs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:20px 0}.sign{font-size:13px;font-weight:650;padding:8px 2px;min-width:0;border-radius:18px;line-height:1.3}.sign span{display:block;height:58px;margin-bottom:4px}.sign svg{width:62px;height:58px}.sign[aria-pressed=true]{background:#ff634f;color:#fff;border-color:#ff634f}.line{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.field{padding:9px 12px}.small{font-size:13px;color:var(--muted)}.dates{color:var(--text);font-size:clamp(26px,7vw,36px);font-weight:780;line-height:1.15;letter-spacing:-1px;margin:7px 0 12px}.gap{margin-top:14px}.scenarios{list-style:none;padding:0;margin:16px 0 0}.scenarios li{display:grid;grid-template-columns:28px 1fr;gap:10px;border-top:1px solid var(--border);padding:10px 0}.scenarios strong{color:var(--muted)}.scenarios .target strong{color:var(--pink)}.scenarios .small{display:block}.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px 2px;text-align:center;margin:22px 0}.grid button{min-width:0;padding:0;border-color:transparent;border-radius:50%;font-weight:650;aspect-ratio:1;min-height:38px}.grid .window:not([aria-pressed=true]){background:#ffeadb;border-radius:12px}.grid .fertile:not([aria-pressed=true]){background:#b9e8fa;color:#164c62}.grid .overlap:not([aria-pressed=true]){background:#b9e8fa;color:#164c62;border:2px solid #e84d37}.grid button[aria-pressed=true]{background:#e84d37;color:#fff;border-radius:50%}.grid button[aria-current=date]{text-decoration:underline;text-underline-offset:5px}.arrow{width:44px;flex:none;font-size:24px;color:var(--pink)}.month:first-letter{text-transform:uppercase}.legend{display:flex;gap:8px 12px;flex-wrap:wrap;font-size:11px}.legend b{font-weight:500}.legend b:first-child{color:#a53525}.legend .fertile-label{color:#16627f}.legend .overlap-label{color:#16627f}details{margin:16px 3px;color:var(--muted);font-size:13px}summary{cursor:pointer;font-weight:600}details p{margin-top:10px}a{color:#b73a29}[hidden]{display:none!important}.date-controls{display:flex;align-items:center;gap:5px;max-width:100%}.date-controls input{min-width:0}.balance{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}.balance div{padding:12px;background:#fff0e6;border-radius:16px}.balance strong{display:block;color:var(--text);font-size:22px}.track{display:flex;height:20px;position:relative;overflow:hidden;border-radius:10px;background:var(--border);margin-top:18px}.track span{background:#edcdb8;flex-basis:0}.track::after{content:"";position:absolute;inset-block:0;left:59.72%;width:2px;background:#262522;box-shadow:0 0 0 1px #fff9f1}.track .target{background:#ff634f}.track-labels{position:relative;display:flex;justify-content:space-between;font-size:11px;margin-top:5px}.best{color:var(--pink)}.matches{display:flex;gap:7px;flex-wrap:wrap}.matches button{padding:7px 12px;background:#e5f5fc;border-color:#b6dce9}.hero-art{width:180px;height:170px;margin:4px auto 0}.hero-art svg{width:100%;height:100%}#today .card{text-align:center}#today .card>h2{font-size:34px;letter-spacing:-1.3px}#today .line{justify-content:center}#today-sign{font-size:38px}#today-due{font-weight:650;font-size:17px}#today-conception{text-transform:uppercase;font-size:10px;letter-spacing:1.3px}#today-boundaries{padding:16px;background:#fff0e6;border-radius:16px;text-align:left}#today-earlier,#today-later{font-size:12px;flex:1}#choose-sign,#open-cycle{display:block;width:100%;background:#e84d37;color:white;border:0;font-weight:650}#today-reset{font-size:12px;padding:8px}#plan>.card:first-child{border:0;padding:4px 0;background:transparent}#plan>.card:first-child>h2{font-size:34px}#plan>.card:first-child>.small{margin-top:6px}#cycle>.card:first-child{padding:18px 12px}#cycle>.card:first-child h2,#cycle>.card:first-child>p{margin-left:6px}#health-file,#flo-file{font-size:12px;width:100%}input::file-selector-button{border:0;background:#ffeadb;color:#763b2e;padding:9px;border-radius:8px;margin-right:8px}.eyebrow{color:#b73a29;text-transform:uppercase;letter-spacing:1px;font-weight:750;font-size:11px}@media(max-width:360px){main{padding-left:12px;padding-right:12px}.card{padding:16px}.sign{font-size:12px}.grid button{min-height:35px}h2{font-size:25px}}
+:root{color-scheme:dark;--bg:#1e172a;--card:#2c2239;--border:#594562;--text:#fff4ee;--muted:#dbc6dc;--pink:#ffc0c9;--gold:#f7d6a2}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#432c4b,var(--bg) 560px);color:var(--text);font:16px/1.5 system-ui,sans-serif}main{max-width:540px;margin:auto;padding:28px 16px max(28px,env(safe-area-inset-bottom))}header{margin:12px 8px 22px}h1,h2,p{margin:0}h1{font:clamp(44px,11vw,66px)/1.08 Georgia,serif;letter-spacing:-.055em}h1 span{font:24px system-ui;color:var(--gold);vertical-align:top;margin-left:8px}header p{margin-top:8px;color:var(--muted)}h2{font:30px/1.15 Georgia,serif}button,input,select{font:inherit}button,select,input{color:inherit;background:var(--bg);border:1px solid var(--border);border-radius:12px;min-height:44px}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}nav button[aria-selected=true],.sign[aria-pressed=true]{background:var(--pink);color:#331b30;border-color:var(--pink);font-weight:650}.card{padding:18px;border:1px solid var(--border);background:var(--card);border-radius:22px;margin-bottom:12px}.signs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}.sign{font-size:13px;padding:5px 2px}.sign span{display:block;font-size:22px;line-height:1.15}.line{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.field{padding:6px 10px}.small{font-size:14px;color:var(--muted)}.dates{color:var(--pink);font:clamp(24px,6vw,34px)/1.2 Georgia,serif;margin:5px 0 9px}.gap{margin-top:12px}.scenarios{list-style:none;padding:0;margin:12px 0 0}.scenarios li{display:grid;grid-template-columns:53px 1fr;gap:9px;border-top:1px solid var(--border);padding:7px 0}.scenarios strong{color:var(--gold)}.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;margin:12px 0}.grid button{min-width:0;padding:0}.grid button[aria-pressed=true]{background:var(--pink);color:#331b30}.grid .window:not([aria-pressed=true]){border-color:var(--gold);color:var(--gold)}.grid button[aria-current=date]{text-decoration:underline;text-underline-offset:4px}.arrow{width:44px}.month:first-letter{text-transform:uppercase}.legend{display:flex;gap:8px;flex-wrap:wrap}.legend b:first-child{color:var(--pink)}.legend b:last-child{color:var(--gold)}details{margin:14px 3px;color:var(--muted);font-size:14px}summary{cursor:pointer}details p{margin-top:8px}a{color:var(--pink)}[hidden]{display:none!important}
+.date-controls{display:flex;align-items:center;gap:5px;max-width:100%}.date-controls input{min-width:0}.date-controls button{flex:none}.balance{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.balance div{padding:9px;border:1px solid var(--border);border-radius:12px}.balance strong{display:block;color:var(--gold);font-size:20px}.track{display:flex;height:17px;position:relative;overflow:hidden;border-radius:8px;background:var(--border);margin-top:12px}.track span{background:#947ba3;flex-basis:0}.track::after{content:"";position:absolute;inset-block:0;left:59.72%;width:2px;background:#28192c;box-shadow:0 0 0 1px #fff4ee}.track .target{background:var(--pink)}.track-labels{position:relative;display:flex;justify-content:space-between}.scenarios li{grid-template-columns:28px 1fr}.scenarios .target strong{color:var(--pink)}.scenarios .small{display:block}.best{border-color:var(--pink);color:var(--pink)}
+.grid .fertile:not([aria-pressed=true]){background:#342f4e;color:#ddd3ff}.grid .sex-day{position:relative}.grid .sex-day::after{content:"♥";position:absolute;right:1px;top:-2px;font-size:10px;color:#ff8ea0}.grid .overlap:not([aria-pressed=true]){background:#c8b9ff;border-color:#c8b9ff;color:#281b3d}.legend .sex-label{color:#ff9eae}.legend .fertile-label{color:#ddd3ff}.legend .overlap-label{color:#c8b9ff}.matches{display:flex;gap:6px;flex-wrap:wrap}.matches button{padding:4px 9px;border-color:#c8b9ff}
 </style>
 </head>
 <body>
 <main>
-<header><h1>+9</h1><p>Маленькое «а если» с большими планами</p></header>
+<header><h1>+9<span aria-hidden="true">✦</span></h1><p>Знаки зодиака и календарь цикла</p></header>
 <nav role="tablist" aria-label="Разделы" style="grid-template-columns:repeat(3,minmax(0,1fr))">
 <button role="tab" id="today-tab" aria-controls="today" aria-selected="true">Если сегодня</button>
-<button role="tab" id="plan-tab" aria-controls="plan" aria-selected="false" tabindex="-1">Хочу знак</button>
+<button role="tab" id="plan-tab" aria-controls="plan" aria-selected="false" tabindex="-1">Подбор по знаку</button>
 <button role="tab" id="cycle-tab" aria-controls="cycle" aria-selected="false" tabindex="-1">Мой цикл</button>
 </nav>
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
 <div class="card">
-<h2>А если сегодня?</h2>
+<h2>Какой знак может быть у ребёнка?</h2>
 <div class="line gap">
 <label class="small" for="today-date">Дата зачатия</label>
 <input class="field" id="today-date" type="date" min="1900-01-01" max="2200-12-31" required>
@@ -47,7 +49,7 @@ if (location.protocol === 'https:') {
 </div>
 <div class="gap" aria-live="polite">
 <p class="small" id="today-conception"></p>
-<div id="today-art" class="hero-art" aria-hidden="true"></div><p class="dates" id="today-sign"></p>
+<p class="dates" id="today-sign"></p>
 <p id="today-due"></p>
 <p class="small gap" id="today-boundaries"></p>
 </div>
@@ -55,16 +57,16 @@ if (location.protocol === 'https:') {
 <button class="field" id="today-earlier">На день раньше</button>
 <button class="field" id="today-later">На день позже</button>
 </div>
-<button class="field gap" id="choose-sign">Выбрать другой знак</button></div>
+</div>
 </section>
 <section id="plan" role="tabpanel" aria-labelledby="plan-tab" hidden>
 <div class="card">
-<h2>Кого загадаем?</h2><p class="small">Выбери знак будущего малыша</p>
+<h2>Какой знак выбираешь?</h2>
 <div class="signs" id="signs"></div>
 <div class="line"><label for="year">Год начала знака</label><select class="field" id="year"></select></div>
 </div>
 <div class="card" aria-live="polite">
-<p class="eyebrow">Даты зачатия</p>
+<p class="small">Когда могло бы произойти зачатие</p>
 <p class="dates" id="window"></p>
 <p class="small" id="due-window"></p>
 <p class="small gap" id="plan-overlap"></p><button class="field gap" id="open-cycle">Сверить с циклом</button>
@@ -97,16 +99,29 @@ if (location.protocol === 'https:') {
 </section>
 <section id="cycle" role="tabpanel" aria-labelledby="cycle-tab" hidden>
 <div class="card">
-<h2>Мой цикл</h2><p class="small gap">Отмечай все дни месячных, включая первый день. Нажми повторно, чтобы снять отметку.</p>
+<h2>Настройки цикла</h2>
+<p class="small gap">Укажи примерные параметры и дату последних месячных. Новые отметки в календаре будут уточнять прогноз.</p>
+<div class="line gap"><label for="cycle-length">Длина цикла, дней</label><input class="field" id="cycle-length" type="number" min="15" max="60" value="28" inputmode="numeric"></div>
+<div class="line gap"><label for="period-length">Длительность месячных, дней</label><input class="field" id="period-length" type="number" min="1" max="15" value="5" inputmode="numeric"></div>
+<div class="line gap"><label for="last-period">Первый день последних месячных</label><input class="field" id="last-period" type="date" min="1900-01-01" max="2200-12-31"></div>
+<p class="small gap" id="settings-status"></p>
+</div>
+<div class="card">
+<h2>Календарь цикла</h2><p class="small gap">Отмечай дни месячных и незащищённого секса. Нажми повторно, чтобы снять отметку.</p>
+<p class="small gap">Прогноз ориентировочный и может меняться с новыми отметками. Он не подходит для планирования или предотвращения беременности.</p>
 <div class="line gap"><button class="arrow" id="prev" aria-label="Предыдущий месяц">‹</button><strong id="month" class="month" aria-live="polite"></strong><button class="arrow" id="next" aria-label="Следующий месяц">›</button></div>
 <div class="grid" id="days"></div>
-<p class="small legend"><b>● Месячные</b><b>□ Окно по знаку</b><b class="fertile-label">◐ Фертильные дни</b><b class="overlap-label">◆ Пересечение</b></p>
+<p class="small gap">Выбери, что отмечать в календаре</p>
+<div class="line gap"><button class="field" id="mark-period" aria-pressed="true">Месячные</button><button class="field" id="mark-sex" aria-pressed="false">Незащищённый секс</button></div>
+<p class="small gap" id="mark-mode">Нажимай дни месячных, чтобы отметить или снять отметку.</p>
+<p class="small legend"><b>● Месячные</b><b class="sex-label">♥ Незащищённый секс</b><b>□ Окно по знаку</b><b class="fertile-label">◐ Фертильные дни</b><b class="overlap-label">◆ Пересечение</b></p>
 <button class="field gap" id="jump">Показать окно по знаку</button>
 </div>
 <div class="card">
 <h2>Пересечение окон</h2>
 <p class="small gap" id="cycle-summary" aria-live="polite"></p>
 <div id="matches" class="matches gap"></div>
+<div class="gap" id="sex-matches" aria-live="polite"></div>
 <details><summary>Как оцениваются фертильные дни</summary><p>Первый день каждой группы подряд отмеченных дней считается началом месячных. По трём последним началам считаем среднюю длину двух циклов. Предполагаемый день овуляции — день цикла с номером «длина цикла минус 14». Фертильное окно включает этот день и пять предыдущих.</p><p>Овуляция может смещаться даже при регулярном цикле. Пересечение сравнивает календарные даты. При выборе дня шкала использует его как условную дату зачатия. Для контрацепции этот расчёт не подходит. <a href="https://www.asrm.org/practice-guidance/practice-committee-documents/optimizing-natural-fertility-a-committee-opinion-2021/" target="_blank" rel="noopener noreferrer">Метод и ограничения (ASRM)</a></p></details>
 </div>
 <div class="card">
@@ -152,7 +167,10 @@ const $ = id => document.getElementById(id);
 const now = new Date();
 const today = date(now.getFullYear(),now.getMonth()+1,now.getDate());
 const storageKey = 'pod-znakom-period-days-v1';
-let marked = new Set();
+const sexStorageKey = 'pod-znakom-unprotected-days-v1';
+const settingsKey = 'pod-znakom-cycle-settings-v1';
+let marked = new Set(), sexDays = new Set();
+let markMode = 'period';
 try {
  const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
  if (Array.isArray(saved)) marked = new Set(saved.filter(value => typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value)));
@@ -160,6 +178,17 @@ try {
  $('storage').textContent = 'Хранилище недоступно. Отметки могут исчезнуть после закрытия приложения.';
 }
 let selected=7, displayMonth=date(now.getFullYear(),now.getMonth()+1), firstConception, lastConception;
+try {
+ const savedSex = JSON.parse(localStorage.getItem(sexStorageKey) || '[]');
+ if (Array.isArray(savedSex)) sexDays = new Set(savedSex.filter(value => typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value)));
+} catch {
+ $('storage').textContent = 'Не удалось прочитать сохранённые отметки секса.';
+}
+let cycleSettings={cycleLength:28,periodLength:5,lastPeriod:''};
+try {
+ const savedSettings=JSON.parse(localStorage.getItem(settingsKey)||'{}');
+ cycleSettings={...cycleSettings,...savedSettings};
+} catch {}
 
 function signWindow(index,year){
  const current = signs[index];
@@ -173,34 +202,11 @@ function signAt(value){
    return value>=first && value<=last;
  }));
 }
-
-function zodiacArt(index){
- const faces = {
-  0:'<path d="M35 38 29 13Q51 8 52 36M65 38 72 13Q51 8 49 36" fill="#e9bb83"/>',
-  3:'<path d="M34 39C-1 47 13 5 33 17M66 39C101 47 87 5 67 17" fill="none" stroke="#d46340" stroke-width="12"/>',
-  4:'<path d="M31 37Q8 38 19 18Q29 7 36 24M69 37Q92 38 81 18Q71 7 64 24" fill="none" stroke="#ae4f32" stroke-width="9"/>',
-  7:'<path d="M50 7 63 15 78 14 82 28 93 39 86 53 89 69 73 75 65 89 50 83 35 89 27 75 11 69 14 53 7 39 18 28 22 14 37 15Z" fill="#ff634f"/>'
- };
- let body;
- if([0,3,4,7].includes(index)) body=faces[index]+'<circle cx="30" cy="44" r="10" fill="#edb774"/><circle cx="70" cy="44" r="10" fill="#edb774"/><path d="M29 42Q29 29 50 29Q71 29 71 42L68 64Q65 79 50 79Q35 79 32 64Z" fill="#f8cf8d"/><path d="M38 50q4 4 7 0m10 0q4 4 7 0" fill="none" stroke="#66402f" stroke-width="2.4" stroke-linecap="round"/><path d="m45 59 5 5 5-5" fill="#b65b3d"/><path d="M50 64v5m-7 0q7 5 14 0" stroke="#66402f" stroke-width="2" fill="none" stroke-linecap="round"/>';
- else {
- const glyphs=['♑','♒','♓','♈','♉','♊','♋','♌','♍','♎','♏','♐'];
- const shapes={
-  2:'<path d="M23 42q19-23 35-2-15 22-35 2m54 18q-19-23-35-2 15 22 35 2" fill="#ff866c"/><circle cx="31" cy="41" r="2" fill="#663d30"/><circle cx="69" cy="59" r="2" fill="#663d30"/>',
-  6:'<path d="M23 37 12 17M77 37l11-20M25 65 12 75m63-10 13 10M22 54H8m70 0h14" stroke="#e86649" stroke-width="7" stroke-linecap="round"/><ellipse cx="50" cy="54" rx="30" ry="23" fill="#ff866c"/><circle cx="40" cy="46" r="3" fill="#663d30"/><circle cx="60" cy="46" r="3" fill="#663d30"/><path d="M44 59q6 5 12 0" stroke="#663d30" stroke-width="2" fill="none"/>',
-  9:'<path d="M50 19v59M24 32h52M26 33 15 57h22ZM74 33 63 57h22ZM34 80h32" stroke="#d96343" stroke-width="5" stroke-linejoin="round" fill="#f6ba78"/><circle cx="50" cy="22" r="5" fill="#ff634f"/>',
-  11:'<path d="M24 75 76 23M53 23h23v23M22 24l54 53" fill="none" stroke="#e86649" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>'
- };
- body=shapes[index]||'<circle cx="50" cy="50" r="36" fill="#ffe4ce"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#d75a40" font-family="serif">'+glyphs[index]+'</text>';
- }
- return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+body+'</svg>';
-}
-
 const signButtons = signs.map(([symbol,name],index)=>{
  const button=document.createElement('button');
  button.className='sign';
  const icon=document.createElement('span');
- icon.innerHTML=zodiacArt(index);
+ icon.textContent=symbol;
  icon.setAttribute('aria-hidden','true');
  button.append(icon,name);
  button.addEventListener('click',()=>{selected=index; renderPlan();});
@@ -299,23 +305,50 @@ function renderScenarios(){
    $('scenarios').append(item);
  }
 }
+function saveCycleSettings(){
+ const cycleLength=Number($('cycle-length').value);
+ const periodLength=Number($('period-length').value);
+ const lastPeriod=$('last-period').value;
+ if(!Number.isInteger(cycleLength)||cycleLength<15||cycleLength>60||
+    !Number.isInteger(periodLength)||periodLength<1||periodLength>15||
+    (lastPeriod && !/^\d{4}-\d{2}-\d{2}$/.test(lastPeriod))){
+   $('settings-status').textContent='Проверь значения длины цикла, месячных и дату.';
+   return;
+ }
+ cycleSettings={cycleLength,periodLength,lastPeriod};
+ try {
+   localStorage.setItem(settingsKey,JSON.stringify(cycleSettings));
+   $('settings-status').textContent='Настройки сохранены на этом устройстве.';
+ } catch {
+   $('settings-status').textContent='Не удалось сохранить настройки на этом устройстве.';
+ }
+ renderCalendar();
+}
+$('cycle-length').value=cycleSettings.cycleLength;
+$('period-length').value=cycleSettings.periodLength;
+$('last-period').value=cycleSettings.lastPeriod;
+for(const id of ['cycle-length','period-length','last-period']){
+ $(id).addEventListener('change',saveCycleSettings);
+}
+
 function fertileEstimate(){
  const starts=[...marked].sort().map(parse).filter((day,index,days)=>
    day<=today && (index===0 || day-days[index-1]>dayMs)
- ).slice(-3);
- if(starts.length<3) return {message:'Отметь хотя бы три менструации с первого дня, чтобы оценить длину цикла.'};
- const [first,second,last]=starts;
- const lengths=[(second-first)/dayMs,(last-second)/dayMs];
- if(lengths.some(length=>length<21 || length>35) || Math.abs(lengths[0]-lengths[1])>7){
-   return {message:'По последним отметкам оценить фертильные дни сложно. Проверь, отмечены ли первые дни трёх последних менструаций.'};
- }
- const length=Math.round((lengths[0]+lengths[1])/2);
- if(today>=shift(last,length+7)) return {message:'Добавь дату начала последних месячных, чтобы обновить оценку.'};
- const windows=[0,1,2].map(cycle=>{
-   const ovulation=shift(last,cycle*length+length-15);
-   return [shift(ovulation,-5),ovulation];
- });
- return {windows,length,horizon:shift(last,3*length-1)};
+ ).slice(-12);
+ const latest=starts.at(-1) || (cycleSettings.lastPeriod ? parse(cycleSettings.lastPeriod) : null);
+ if(!latest) return {message:'Укажи первый день последних месячных, чтобы начать прогноз.'};
+ const observedLengths=starts.slice(1).map((day,index)=>(day-starts[index])/dayMs)
+   .filter(length=>length>=15 && length<=60);
+ const length=observedLengths.length
+   ? Math.round(observedLengths.reduce((sum,value)=>sum+value,0)/observedLengths.length)
+   : Number(cycleSettings.cycleLength);
+ if(!Number.isInteger(length)||length<15||length>60) return {message:'Проверь среднюю длину цикла в настройках.'};
+ const periodLength=Number(cycleSettings.periodLength);
+ const nextPeriod=shift(latest,length);
+ const ovulation=shift(nextPeriod,-14);
+ const windows=[[shift(ovulation,-5),shift(ovulation,1)]];
+ const horizon=shift(nextPeriod,length*2-1);
+ return {windows,length,horizon,latest,nextPeriod,ovulation,periodLength,observedCycles:observedLengths.length};
 }
 function renderMatches(estimate){
  const matches=$('matches');
@@ -323,6 +356,7 @@ function renderMatches(estimate){
  const selectedSign=signs[selected][1]+' · '+$('year').value;
  if(!estimate.windows){
    $('cycle-summary').textContent=selectedSign+'. '+estimate.message;
+   $('sex-matches').replaceChildren();
    $('plan-overlap').textContent=estimate.message;
    return;
  }
@@ -342,7 +376,23 @@ function renderMatches(estimate){
  const message=dates.length
    ? 'Примерное пересечение: '+daysLabel(dates.length)+'. Выбери день, чтобы открыть шкалу родов.'
    : coverage;
- $('cycle-summary').textContent=selectedSign+'. Средняя длина цикла — '+daysLabel(length)+'. Оценка до '+full(horizon)+'. '+message;
+ const daysToNext=Math.round((estimate.nextPeriod-today)/dayMs);
+ $('cycle-summary').textContent=selectedSign+'. Следующие месячные ожидаются '+full(estimate.nextPeriod)+
+   ' примерно на '+daysLabel(estimate.periodLength)+'. Овуляция ориентировочно '+full(estimate.ovulation)+
+   ', фертильное окно '+range(...windows[0])+'. '+(estimate.observedCycles
+     ? 'Уточнено по '+daysLabel(estimate.observedCycles)+' интервалам цикла. '
+     : 'Пока использованы введённые настройки. ')+message;
+ const sexMatches=[...sexDays].filter(day=>day>=iso(today) && day<=iso(horizon) && windows.some(([first,last])=>parse(day)>=first && parse(day)<=last));
+ $('sex-matches').replaceChildren();
+ const sexTitle=document.createElement('p');
+ sexTitle.className='small';
+ sexTitle.textContent=sexMatches.length ? 'Отмеченные дни незащищённого секса в примерных фертильных окнах:' : 'Отмеченные дни секса не попали в показанные примерные фертильные окна.';
+ $('sex-matches').append(sexTitle);
+ for(const day of sexMatches){
+   const item=document.createElement('p');
+   item.textContent='♥ '+full(parse(day));
+   $('sex-matches').append(item);
+ }
  $('plan-overlap').textContent=message;
  for(const day of dates){
    const button=document.createElement('button');
@@ -373,19 +423,22 @@ function renderCalendar(){
    const value=date(year,month,day), key=iso(value);
    const button=document.createElement('button');
    const inWindow=value>=firstConception && value<=lastConception;
-   button.textContent=day;
+   button.textContent=day+(sexDays.has(key)?' ♥':'');
    const fertile=estimate.windows?.some(([first,last])=>value>=today && value>=first && value<=last);
+   button.classList.toggle('sex-day',sexDays.has(key));
    button.classList.toggle('window',inWindow);
    button.classList.toggle('fertile',Boolean(fertile));
    button.classList.toggle('overlap',Boolean(fertile && inWindow));
    button.id='day-'+key;
-   button.setAttribute('aria-label',full(value)+(inWindow?', окно по знаку':'')+(fertile?', примерный фертильный день':''));
+   button.setAttribute('aria-label',full(value)+(sexDays.has(key)?', отмечен незащищённый секс':'')+(inWindow?', окно по знаку':'')+(fertile?', примерный фертильный день':''));
    if(key===iso(today)) button.setAttribute('aria-current','date');
-   button.setAttribute('aria-pressed',marked.has(key));
+   button.setAttribute('aria-pressed',markMode==='sex'?sexDays.has(key):marked.has(key));
    button.addEventListener('click',()=>{
-      if(marked.has(key)) marked.delete(key); else marked.add(key);
-      button.setAttribute('aria-pressed',marked.has(key));
-      try {localStorage.setItem(storageKey,JSON.stringify([...marked]));}
+      const activeSet=markMode==='sex'?sexDays:marked;
+      const activeKey=markMode==='sex'?sexStorageKey:storageKey;
+      if(activeSet.has(key)) activeSet.delete(key); else activeSet.add(key);
+      button.setAttribute('aria-pressed',activeSet.has(key));
+      try {localStorage.setItem(activeKey,JSON.stringify([...activeSet]));}
       catch {$('storage').textContent='Не удалось сохранить отметки. Они исчезнут после закрытия приложения.';}
       renderCalendar();
       $('day-'+key).focus();
@@ -397,6 +450,20 @@ function moveMonth(offset){
  displayMonth=date(displayMonth.getUTCFullYear(),displayMonth.getUTCMonth()+1+offset);
  renderCalendar();
 }
+$('mark-period').addEventListener('click',()=>{
+ markMode='period';
+ $('mark-period').setAttribute('aria-pressed','true');
+ $('mark-sex').setAttribute('aria-pressed','false');
+ $('mark-mode').textContent='Нажимай дни месячных, чтобы отметить или снять отметку.';
+ renderCalendar();
+});
+$('mark-sex').addEventListener('click',()=>{
+ markMode='sex';
+ $('mark-period').setAttribute('aria-pressed','false');
+ $('mark-sex').setAttribute('aria-pressed','true');
+ $('mark-mode').textContent='Нажимай дни незащищённого секса, чтобы отметить или снять отметку.';
+ renderCalendar();
+});
 $('prev').addEventListener('click',()=>moveMonth(-1));
 $('next').addEventListener('click',()=>moveMonth(1));
 $('jump').addEventListener('click',()=>{
@@ -532,9 +599,7 @@ function renderToday(){
  const year = due.getUTCFullYear();
  const [first, last] = signWindow(index, sign[2] > due.getUTCMonth() + 1 ? year - 1 : year);
  $('today-conception').textContent = 'Если зачать ' + (conceptionOffset === 0 ? 'сегодня, ' : '') + full(conception);
- $('today-art').innerHTML = zodiacArt(index);
- const adjective = index === 2 ? 'Маленькие ' : [8,9].includes(index) ? 'Маленькая ' : 'Маленький ';
- $('today-sign').textContent = adjective + sign[1];
+ $('today-sign').textContent = sign[0] + ' ' + sign[1];
  $('today-due').textContent = 'Расчётная дата родов — ' + full(due);
  $('today-boundaries').textContent = 'Если роды будут до ' + format(first, {day:'numeric', month:'long'}) +
    ', соседний знак — ' + previous[1] + '. После ' + format(last, {day:'numeric', month:'long'}) + ' — ' + next[1] + '.';
@@ -556,16 +621,12 @@ $('today-later').addEventListener('click',()=>{
  conceptionOffset += 1;
  renderToday();
 });
-$('choose-sign').addEventListener('click',()=>{activate($('plan-tab'));window.scrollTo(0,0);});
-const navIcons=['<rect x="4" y="6" width="16" height="15" rx="3"/><path d="M8 3v6m8-6v6M4 12h16"/>','<path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/>','<path d="M3 15c5-14 7 8 12-4s6-3 6-3"/>'];
-['today-tab','plan-tab','cycle-tab'].forEach((id,i)=>$(id).insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+navIcons[i]+'</svg>'));
 const tabs=[$('today-tab'),$('plan-tab'),$('cycle-tab')];
 $('open-cycle').addEventListener('click',()=>{
  activate($('cycle-tab'));
  $('cycle-tab').focus();
 });
 function activate(tab){
- window.scrollTo({top:0,behavior:"instant"});
  for(const item of tabs){
    const active=item===tab;
    item.setAttribute('aria-selected',active);
