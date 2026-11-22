@@ -42,6 +42,10 @@ if (location.protocol === 'https:') {
 <section id="today" role="tabpanel" aria-labelledby="today-tab">
 <div class="card">
 <h2>Какой знак может быть у ребёнка?</h2>
+<div class="line gap">
+<label class="small" for="today-date">Дата зачатия</label>
+<input class="field" id="today-date" type="date" min="1900-01-01" max="2200-12-31" required>
+</div>
 <div class="gap" aria-live="polite">
 <p class="small" id="today-conception"></p>
 <p class="dates" id="today-sign"></p>
@@ -361,6 +365,10 @@ $('jump').addEventListener('click',()=>{
 let conceptionOffset = 0;
 function renderToday(){
  const conception = shift(today, conceptionOffset);
+ const field = $('today-date');
+ field.value = iso(conception);
+ $('today-earlier').disabled = field.value === field.min;
+ $('today-later').disabled = field.value === field.max;
  const due = shift(conception, 266);
  const sign = signAt(due);
  const index = signs.indexOf(sign);
@@ -374,6 +382,11 @@ function renderToday(){
  $('today-boundaries').textContent = 'Если роды будут до ' + format(first, {day:'numeric', month:'long'}) +
    ', соседний знак — ' + previous[1] + '. После ' + format(last, {day:'numeric', month:'long'}) + ' — ' + next[1] + '.';
 }
+$('today-date').addEventListener('change', event => {
+ const field = event.currentTarget;
+ if (field.validity.valid) conceptionOffset = (parse(field.value) - today) / dayMs;
+ renderToday();
+});
 $('today-earlier').addEventListener('click',()=>{
  conceptionOffset -= 1;
  renderToday();
