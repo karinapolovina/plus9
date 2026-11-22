@@ -505,53 +505,23 @@ function healthPeriodDays(xml) {
 
 // Read the Apple export incrementally. Only menstrual records become tiny XML documents.
 // Never build a DOM for the complete Health export or send its data over the network.
-async function readHealthFile(file, {onProgress=()=>{}, isCurrent=()=>true, chunkSize=512*1024}={}) {
- if (!file.size) throw new Error('Файл пустой. Выбери export.xml из архива «Здоровья».');
- const decoder=new TextDecoder('utf-8');
- const dates=new Set();
- let buffer='', prefix='', rootSeen=false, endSeen=false;
- const check=()=>{if(!isCurrent())throw new DOMException('Отменено','AbortError');};
- for(let offset=0;offset<file.size;offset+=chunkSize){
-   check();
-   const bytes=await file.slice(offset,Math.min(offset+chunkSize,file.size)).arrayBuffer();
-   check();
-   buffer+=decoder.decode(bytes,{stream:offset+chunkSize<file.size});
-   if(prefix.length<65536)prefix+=buffer.slice(0,65536-prefix.length);
-   rootSeen ||= /<HealthData(?=[\s>])/.test(prefix);
-   endSeen ||= /<\/HealthData\s*>/.test(buffer);
-   let cursor=0;
-   while(true){
-     const start=buffer.indexOf('<Record',cursor);
-     if(start<0){buffer=buffer.slice(Math.max(cursor,buffer.length-64));break;}
-     const boundary=buffer[start+7];
-     if(boundary && !/[\s/>]/.test(boundary)){cursor=start+7;continue;}
-     let quote='', end=start+7;
-     for(;end<buffer.length;end++){
-       const char=buffer[end];
-       if(quote){if(char===quote)quote='';}
-       else if(char==='"'||char==="'")quote=char;
-       else if(char==='>')break;
-     }
-     if(end===buffer.length){
-       buffer=buffer.slice(start);
-       if(buffer.length>128*1024)throw new Error('Не удалось прочитать XML. Проверь, что выбран export.xml из «Здоровья».');
-       break;
-     }
-     const record=buffer.slice(start,end+1);
-     if(record.includes('HKCategoryTypeIdentifierMenstrualFlow')){
-       // Some exports use an explicit closing tag instead of a self-closing Record.
-       const isolated=record.endsWith('/>')?record:record+'</Record>';
-       for(const day of healthPeriodDays('<HealthData>'+isolated+'</HealthData>'))dates.add(day);
-     }
-     cursor=end+1;
-   }
-   onProgress(Math.min(100,Math.round(Math.min(offset+chunkSize,file.size)/file.size*100)));
-   // Yield so Safari/Telegram can paint progress and react to cancellation.
-   await new Promise(resolve=>setTimeout(resolve,0));
- }
- check();
- if(!rootSeen || !endSeen)throw new Error('Нужен полный файл export.xml из архива «Здоровья». ZIP сначала распакуй в «Файлах».');
- return [...dates].sort();
+let activeHealthImport=null;
+function stopHealthImport(){if(activeHealthImport){activeHealthImport.cancel();activeHealthImport=null;}}
+function readHealthFile(file,{onProgress=()=>{}}={}){
+ return new Promise((resolve,reject)=>{
+  let worker;
+  try {worker=new Worker(new URL('./health-import-worker.js?v=2',location.href));}
+  catch {reject(new Error('Не удалось запустить фоновое чтение. Открой импорт во внешнем браузере по ссылке ниже.'));return;}
+  const finish=()=>{worker.terminate();if(activeHealthImport?.worker===worker)activeHealthImport=null;};
+  activeHealthImport={worker,cancel:()=>{finish();reject(new DOMException('Отменено','AbortError'));}};
+  worker.onmessage=({data})=>{
+   if(data.type==='progress')onProgress(data.percent);
+   if(data.type==='done'){finish();resolve(data.dates);}
+   if(data.type==='error'){finish();reject(new Error(data.message));}
+  };
+  worker.onerror=event=>{event.preventDefault();finish();reject(new Error('Фоновое чтение прервалось. Попробуй открыть импорт во внешнем браузере.'));};
+  worker.postMessage({file,today:+today});
+ });
 }
 
 function floPeriodDays(json) {
@@ -591,76 +561,48 @@ function floCalendarDay(value) {
  return Number.isFinite(+timestamp) ? date(timestamp.getFullYear(), timestamp.getMonth()+1, timestamp.getDate()) : null;
 }
 
-function setupPeriodImport(source, readDates, fileError) {
- const get = name => $(source + '-' + name);
- let pendingDates = [];
- let readVersion=0;
- const cancel=document.createElement('button');
- cancel.type='button';cancel.className='field gap';cancel.textContent='Отменить чтение';cancel.hidden=true;
- get('status').after(cancel);
- cancel.addEventListener('click',()=>{
-   readVersion++;pendingDates=[];get('file').value='';cancel.hidden=true;
-   get('preview').hidden=get('apply').hidden=true;
-   get('status').textContent='Чтение отменено. Сохранённые отметки не изменились.';
+function setupPeriodImport(source,readDates,fileError){
+ const get=name=>$(source+'-'+name);
+ let pendingDates=[],readVersion=0,selectedFile=null;
+ const cancel=document.createElement('button');cancel.type='button';cancel.className='field gap';cancel.textContent='Отменить чтение';cancel.hidden=true;get('status').after(cancel);
+ const start=document.createElement('button');start.type='button';start.className='primary gap';start.textContent='Начать чтение';start.hidden=true;get('status').after(start);
+ const clearFlag=()=>{if(source==='health')try{localStorage.removeItem('plus9-health-reading');}catch{}};
+ cancel.onclick=()=>{readVersion++;if(source==='health')stopHealthImport();clearFlag();pendingDates=[];selectedFile=null;get('file').value='';cancel.hidden=start.hidden=true;get('preview').hidden=get('apply').hidden=true;get('status').textContent='Чтение отменено. Сохранённые отметки не изменились.';};
+ async function processFile(file,version){
+  const isCurrent=()=>version===readVersion&&selectedFile===file;
+  start.hidden=true;cancel.hidden=false;
+  get('status').textContent='Запускаем фоновое чтение…';
+  if(source==='health')try{localStorage.setItem('plus9-health-reading','1');}catch{}
+  try{
+   const dates=source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
+   if(!isCurrent())return;
+   clearFlag();cancel.hidden=true;pendingDates=dates.filter(day=>!marked.has(day));
+   get('status').textContent=pendingDates.length?'Новых дат: '+pendingDates.length+'. Проверь их перед добавлением.':dates.length?'Все найденные даты уже есть в календаре.':'В файле нет записей о месячных.';
+   for(const day of pendingDates.slice(0,120)){const item=document.createElement('li');item.textContent=full(parse(day));get('dates').append(item);}
+   if(pendingDates.length>120){const note=document.createElement('li');note.textContent='Показаны первые 120 дат. Всего будет добавлено: '+pendingDates.length+'.';get('dates').append(note);}
+   get('preview').hidden=get('apply').hidden=!pendingDates.length;
+  }catch(error){if(isCurrent()){clearFlag();cancel.hidden=true;start.hidden=false;get('status').textContent=source==='health'?error.message:fileError;}}
+ }
+ start.onclick=()=>{if(selectedFile)processFile(selectedFile,readVersion);};
+ get('file').addEventListener('change',event=>{
+  readVersion++;if(source==='health')stopHealthImport();clearFlag();selectedFile=event.currentTarget.files[0]||null;pendingDates=[];
+  get('apply').hidden=get('preview').hidden=true;get('dates').replaceChildren();cancel.hidden=true;start.hidden=!selectedFile;
+  if(!selectedFile){get('status').textContent='';return;}
+  if(source==='health'){get('status').textContent='Файл выбран: '+(selectedFile.size/1048576).toFixed(1)+' МБ. Нажми «Начать чтение». Пока файл не читается.';}
+  else processFile(selectedFile,readVersion);
  });
- get('file').addEventListener('change', async event => {
-  const input = event.currentTarget;
-  const file = input.files[0];
-  const version=++readVersion;
-  const isCurrent=()=>version===readVersion && input.files[0]===file;
-  cancel.hidden=!file;
-  pendingDates = [];
-  get('apply').hidden = true;
-  get('preview').hidden = true;
-  get('dates').replaceChildren();
-  get('status').textContent = file ? 'Читаем файл…' : '';
-  if (!file) return;
-  try {
-    const dates = source==='health'
-      ? await readHealthFile(file,{isCurrent,onProgress:percent=>{
-          if(isCurrent())get('status').textContent='Читаем файл на устройстве: '+percent+'%. Можно отменить.';
-        }})
-      : readDates(await file.text());
-    if (!isCurrent()) return;
-    cancel.hidden=true;
-    pendingDates = dates.filter(day => !marked.has(day));
-    get('status').textContent = pendingDates.length
-      ? 'Новых дат: ' + pendingDates.length + '. Проверь их перед добавлением.'
-      : dates.length ? 'Все найденные даты уже есть в календаре.' : 'В файле нет записей о месячных.';
-    for (const day of pendingDates.slice(0,120)) {
-      const item = document.createElement('li');
-      item.textContent = full(parse(day));
-      get('dates').append(item);
-    }
-    if(pendingDates.length>120){
-      const note=document.createElement('li');note.textContent='Показаны первые 120 дат. Будут добавлены все найденные даты: '+pendingDates.length+'.';get('dates').append(note);
-    }
-    get('preview').hidden = get('apply').hidden = !pendingDates.length;
-  } catch (error) {
-    if (isCurrent()) {
-      get('status').textContent = error.name==='AbortError' ? 'Чтение отменено.' : (source==='health' && error.message ? error.message : fileError);
-      cancel.hidden=true;
-    }
-  }
- });
-
- get('apply').addEventListener('click', () => {
-  const dates = pendingDates.filter(day => !marked.has(day));
-  const combined = new Set([...marked, ...dates]);
-  try {
-    localStorage.setItem(storageKey, JSON.stringify([...combined]));
-  } catch {
-    get('status').textContent = 'Не удалось сохранить даты на этом устройстве.';
-    return;
-  }
-  marked = combined;
-  pendingDates = [];
-  get('dates').replaceChildren();
-  get('preview').hidden = get('apply').hidden = true;
-  get('file').value = '';
-  get('status').textContent = 'Добавлено дат: ' + dates.length + '.';
-  renderCalendar();
- });
+ get('apply').onclick=()=>{
+  const dates=pendingDates.filter(day=>!marked.has(day)),combined=new Set([...marked,...dates]);
+  try{localStorage.setItem(storageKey,JSON.stringify([...combined]));}catch{get('status').textContent='Не удалось сохранить даты на этом устройстве.';return;}
+  marked=combined;pendingDates=[];selectedFile=null;get('dates').replaceChildren();get('preview').hidden=get('apply').hidden=start.hidden=true;get('file').value='';get('status').textContent='Добавлено дат: '+dates.length+'.';renderCalendar();
+ };
+ if(source==='health'){
+  const external=document.createElement('a');external.textContent='Открыть импорт во внешнем браузере';external.href=new URL('?view=cycle&import=health-worker2',location.href).href;external.target='_blank';external.rel='noopener noreferrer';external.className='small gap';external.style.display='block';
+  external.onclick=event=>{const app=window.Telegram?.WebApp;if(app?.initData&&app.openLink){event.preventDefault();app.openLink(external.href);}};
+  get('status').parentElement.append(external);
+  const note=document.createElement('p');note.className='small gap';note.textContent='Если Telegram закрывается уже при выборе файла, используй внешний браузер. Его отметки хранятся отдельно от Telegram.';external.after(note);
+  try{if(localStorage.getItem('plus9-health-reading'))get('status').textContent='Предыдущее чтение прервалось. Попробуй внешний браузер по ссылке ниже.';}catch{}
+ }
 }
 setupPeriodImport('health', healthPeriodDays, 'Не удалось прочитать файл. Выбери export.xml из архива Apple «Здоровье».');
 setupPeriodImport('flo', floPeriodDays, 'Не удалось прочитать JSON. Выбери распакованный файл из выгрузки Flo.');
@@ -744,7 +686,8 @@ renderPlan();
 $('cycle-settings').open=!cycleSettings.lastPeriod && !marked.size;
 document.body.dataset.screen='today';
 const initialView=new URL(location.href).searchParams.get('view');
-if(['today','plan','cycle'].includes(initialView))activate($(initialView+'-tab')); 
+if(['today','plan','cycle'].includes(initialView))activate($(initialView+'-tab'));
+if(new URL(location.href).searchParams.has('import')){$('health-file').closest('details').open=true;} 
 const calendarHelp=document.createElement('details');calendarHelp.innerHTML='<summary>Как отмечать дни</summary>';
 for(const paragraph of [...document.querySelectorAll('.calendar-card > p.small')].slice(0,2))calendarHelp.append(paragraph);
 document.querySelector('.calendar-card').append(calendarHelp);
@@ -756,5 +699,6 @@ document.querySelector('.calendar-card').append(markDetails);
 </script>
 </body>
 </html>
+
 
 
