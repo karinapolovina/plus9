@@ -565,6 +565,7 @@ $('open-cycle').addEventListener('click',()=>{
  $('cycle-tab').focus();
 });
 function activate(tab){
+ window.scrollTo({top:0,behavior:"instant"});
  for(const item of tabs){
    const active=item===tab;
    item.setAttribute('aria-selected',active);
