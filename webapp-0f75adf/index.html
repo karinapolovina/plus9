@@ -103,7 +103,7 @@ if (location.protocol === 'https:') {
 <p class="small gap">Укажи примерные параметры и дату последних месячных. Новые отметки в календаре будут уточнять прогноз.</p>
 <div class="line gap"><label for="cycle-length">Длина цикла, дней</label><input class="field" id="cycle-length" type="number" min="15" max="60" value="28" inputmode="numeric"></div>
 <div class="line gap"><label for="period-length">Длительность месячных, дней</label><input class="field" id="period-length" type="number" min="1" max="15" value="5" inputmode="numeric"></div>
-<div class="line gap"><label for="last-period">Первый день последних месячных</label><input class="field" id="last-period" type="date" min="1900-01-01" max="2200-12-31"></div>
+<div class="line gap"><label for="last-period">Первый день последних месячных</label><div class="date-controls"><input class="field" id="last-period" type="date" min="1900-01-01" max="2200-12-31"><button class="field" id="clear-last-period" type="button">Очистить</button></div></div>
 <p class="small gap" id="settings-status"></p>
 </div>
 <div class="card">
@@ -327,6 +327,10 @@ function saveCycleSettings(){
 $('cycle-length').value=cycleSettings.cycleLength;
 $('period-length').value=cycleSettings.periodLength;
 $('last-period').value=cycleSettings.lastPeriod;
+ $('clear-last-period').addEventListener('click',()=>{
+  $('last-period').value='';
+  saveCycleSettings();
+ });
 for(const id of ['cycle-length','period-length','last-period']){
  $(id).addEventListener('change',saveCycleSettings);
 }
