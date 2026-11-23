@@ -55,14 +55,15 @@ export async function readHealthPdf(file){
  pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
  let doc;
  try{doc=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise;
- let periods,items,lastError;
+ let periods,items,lastError,settings=null;
  for(let number=1;number<=Math.min(doc.numPages,8);number++){
   const page=await doc.getPage(number);const content=await page.getTextContent();page.cleanup();
+  settings=settings||summarySettings(content.items);
   try{periods=summaryPeriods(content.items);items=content.items;break;}catch(error){lastError=error;}
  }
  if(!periods)throw new Error('Не удалось распознать историю цикла в этом PDF. '+(lastError?.message||''));
  const dates=new Set();const today=new Date().toISOString().slice(0,10);
  for(const p of periods)for(let i=0;i<p.count;i++){const d=new Date(p.start+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+i);const iso=d.toISOString().slice(0,10);if(iso<=today)dates.add(iso);}
- const result=[...dates].sort();result.cycleSettings=summarySettings(items);return result;
+ const result=[...dates].sort();result.cycleSettings=settings||summarySettings(items);return result;
  }finally{if(doc)await doc.destroy();}
 }

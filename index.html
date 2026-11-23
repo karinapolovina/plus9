@@ -632,7 +632,7 @@ function setupPeriodImport(source,readDates,fileError){
   try{
    const isPdf=source==='health'&&(/\.pdf$/i.test(file.name)||file.type==='application/pdf');
    if(source==='flo'&&file.size>20*1048576)throw new Error('Файл Flo слишком большой. Максимум 20 МБ.');
-   const dates=isPdf?await (await import('./health-pdf.mjs?v=3')).readHealthPdf(file):source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
+   const dates=isPdf?await (await import('./health-pdf.mjs?v=4')).readHealthPdf(file):source==='health'?await readHealthFile(file,{onProgress:percent=>{if(isCurrent())get('status').textContent='Фоновое чтение: '+percent+'%. Можно отменить.';}}):readDates(await file.text());
    if(!isCurrent())return;
    clearFlag();cancel.hidden=true;pendingSettings=isPdf?dates.cycleSettings:null;pendingDates=dates.filter(day=>!marked.has(day));
    get('status').textContent=pendingDates.length?'Новых дат: '+pendingDates.length+'. Проверь их перед добавлением.':dates.length?'Все найденные даты уже есть в календаре.':'В файле нет записей о месячных.';
